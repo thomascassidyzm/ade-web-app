@@ -9,8 +9,8 @@ const WebSocket = require('ws');
 const http = require('http');
 
 // Configuration
-const ADE_WS_URL = process.env.ADE_WS_URL || 'wss://ade-app.up.railway.app';
-const ADE_HTTP_URL = process.env.ADE_HTTP_URL || 'https://ade-app.up.railway.app';
+const ADE_WS_URL = process.env.ADE_WS_URL || 'wss://ade-web-app-production.up.railway.app';
+const ADE_HTTP_URL = process.env.ADE_HTTP_URL || 'https://ade-web-app-production.up.railway.app';
 
 // Global state
 let ws = null;
