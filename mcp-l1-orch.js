@@ -567,9 +567,30 @@ function sendError(id, code, message) {
   }));
 }
 
+// MCP Request handling
+rl.on('line', (line) => {
+  process.stderr.write(`MCP Request: ${line}\n`);
+  try {
+    const request = JSON.parse(line);
+    if (!request || typeof request !== 'object') {
+      throw new Error('Invalid request format');
+    }
+    if (request.id === undefined) {
+      throw new Error('Missing request id');
+    }
+    handleMCPRequest(request);
+  } catch (e) {
+    const errorResponse = {
+      jsonrpc: '2.0',
+      id: null,
+      error: {
+        code: -32700,
+        message: 'Parse error: ' + e.message
+      }
+    };
+    console.log(JSON.stringify(errorResponse));
+  }
+});
+
 // Start
 process.stderr.write('ADE L1_ORCH MCP Server starting...\n');
-connectWebSocket();
-
-// Start reading MCP commands
-rl.on('line', handleLine);
