@@ -59,6 +59,33 @@ function connectToBridge() {
           status: agent.status
         }));
       }
+      
+      if (msg.type === 'agent_connect' && msg.agentId === 'L1_ORCH') {
+        console.log('L1_ORCH connected');
+        // Notify all web clients
+        clients.forEach((client) => {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({
+              type: 'orch_connected',
+              timestamp: new Date().toISOString()
+            }));
+          }
+        });
+      }
+      
+      if (msg.type === 'apml_message' && msg.to === 'user') {
+        console.log('APML message for user:', msg);
+        // Forward to all web clients
+        clients.forEach((client) => {
+          if (client.readyState === WebSocket.OPEN) {
+            client.send(JSON.stringify({
+              type: 'apml_from_orch',
+              content: msg.content,
+              timestamp: new Date().toISOString()
+            }));
+          }
+        });
+      }
     } catch (e) {
       // Not JSON or not a command we handle, just forward
     }

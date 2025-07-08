@@ -99,6 +99,9 @@ class ADEClient {
       case 'orch_connected':
         this.updateConnectionStatus('orch', 'Connected');
         break;
+      case 'apml_from_orch':
+        this.displayOrchMessage(data.content);
+        break;
       default:
         console.log('Unhandled message type:', data.type);
     }
@@ -202,6 +205,16 @@ class ADEClient {
     
     container.appendChild(entryEl);
     container.scrollTop = container.scrollHeight;
+  }
+  
+  displayOrchMessage(content) {
+    const message = content.message || JSON.stringify(content);
+    this.logActivity('L1_ORCH', message);
+    
+    // If there's a phase, update UI accordingly
+    if (content.phase) {
+      this.logActivity('system', `Phase: ${content.phase}`);
+    }
   }
   
   updateConnectionStatus(service, status) {
