@@ -345,7 +345,7 @@ function handleToolCall(tool, args, id) {
       if (ws && isConnected) {
         // Send APML message through WebSocket
         ws.send(JSON.stringify({
-          type: 'agent_response',
+          type: 'apml_message',
           from: 'L1_ORCH',
           to: args.to || 'user',
           messageType: args.type || 'response',

@@ -78,6 +78,9 @@ class ADEClient {
     
     this.ws.send(JSON.stringify(message));
     this.logActivity('user', `Sent: "${description}"`);
+    
+    // Also show in chat interface
+    this.addChatMessage('user', description);
   }
   
   handleMessage(data) {
@@ -211,10 +214,35 @@ class ADEClient {
     const message = content.message || JSON.stringify(content);
     this.logActivity('L1_ORCH', message);
     
+    // Display in chat interface
+    this.addChatMessage('orch', message);
+    
     // If there's a phase, update UI accordingly
     if (content.phase) {
       this.logActivity('system', `Phase: ${content.phase}`);
     }
+  }
+  
+  addChatMessage(sender, message) {
+    const container = document.getElementById('chat-messages');
+    
+    // Remove welcome message if it exists
+    const welcome = container.querySelector('.chat-welcome');
+    if (welcome) {
+      welcome.remove();
+    }
+    
+    const messageEl = document.createElement('div');
+    messageEl.className = `chat-message ${sender}`;
+    
+    const senderLabel = sender === 'user' ? 'You' : 'L1_ORCH';
+    messageEl.innerHTML = `
+      <div class="sender">${senderLabel}</div>
+      <div class="content">${message}</div>
+    `;
+    
+    container.appendChild(messageEl);
+    container.scrollTop = container.scrollHeight;
   }
   
   updateConnectionStatus(service, status) {
