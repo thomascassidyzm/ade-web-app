@@ -12,14 +12,15 @@ body {
 }
 
 .container {
-  max-width: 800px;
+  max-width: 1400px;
   margin: 0 auto;
-  padding: 2rem;
+  padding: 1rem;
 }
 
 header {
   text-align: center;
   margin-bottom: 3rem;
+  position: relative;
 }
 
 header h1 {
@@ -112,4 +113,216 @@ header p {
 
 .hidden {
   display: none;
+}
+
+/* Dashboard Layout */
+.dashboard {
+  display: grid;
+  grid-template-columns: 300px 1fr;
+  gap: 2rem;
+  min-height: 600px;
+}
+
+.sidebar {
+  display: flex;
+  flex-direction: column;
+  gap: 1.5rem;
+}
+
+.main-content {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+
+/* Connection Status */
+.connection-status {
+  position: absolute;
+  top: 2rem;
+  right: 2rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: white;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.status-dot {
+  width: 10px;
+  height: 10px;
+  border-radius: 50%;
+  background: #fbbf24;
+  animation: pulse 2s infinite;
+}
+
+.status-dot.connected {
+  background: #10b981;
+  animation: none;
+}
+
+.status-dot.error {
+  background: #ef4444;
+  animation: none;
+}
+
+@keyframes pulse {
+  0% { opacity: 1; }
+  50% { opacity: 0.5; }
+  100% { opacity: 1; }
+}
+
+/* Panels */
+.panel {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.panel h3 {
+  margin: 0 0 1rem 0;
+  font-size: 1.1rem;
+  color: #1f2937;
+}
+
+/* Connections */
+.connection-item {
+  display: flex;
+  justify-content: space-between;
+  padding: 0.5rem 0;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.connection-item:last-child {
+  border-bottom: none;
+}
+
+.conn-label {
+  color: #6b7280;
+  font-size: 0.9rem;
+}
+
+.conn-status {
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.conn-status.connected {
+  color: #10b981;
+}
+
+.conn-status.disconnected {
+  color: #ef4444;
+}
+
+/* Agents List */
+.agents-list {
+  max-height: 300px;
+  overflow-y: auto;
+}
+
+.agent-item {
+  padding: 0.75rem;
+  margin-bottom: 0.5rem;
+  background: #f9fafb;
+  border-radius: 6px;
+  border-left: 3px solid #2563eb;
+}
+
+.agent-name {
+  font-weight: 600;
+  font-size: 0.9rem;
+  color: #1f2937;
+}
+
+.agent-status {
+  font-size: 0.8rem;
+  color: #6b7280;
+  margin-top: 0.25rem;
+}
+
+/* VFS Browser */
+.vfs-browser {
+  max-height: 300px;
+  overflow-y: auto;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+}
+
+.vfs-item {
+  padding: 0.5rem;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.vfs-item:hover {
+  background: #f3f4f6;
+}
+
+.vfs-folder {
+  font-weight: 600;
+  color: #2563eb;
+}
+
+.vfs-file {
+  color: #4b5563;
+  padding-left: 1rem;
+}
+
+/* Activity Log */
+#activity-log {
+  background: white;
+  padding: 1.5rem;
+  border-radius: 8px;
+  box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.activity-log {
+  max-height: 400px;
+  overflow-y: auto;
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  line-height: 1.6;
+}
+
+.activity-entry {
+  padding: 0.5rem;
+  border-bottom: 1px solid #f3f4f6;
+  display: flex;
+  gap: 1rem;
+}
+
+.activity-time {
+  color: #9ca3af;
+  min-width: 80px;
+}
+
+.activity-type {
+  font-weight: 600;
+  min-width: 100px;
+}
+
+.activity-type.agent {
+  color: #2563eb;
+}
+
+.activity-type.vfs {
+  color: #10b981;
+}
+
+.activity-type.system {
+  color: #6b7280;
+}
+
+.activity-message {
+  flex: 1;
+}
+
+.empty-state {
+  color: #9ca3af;
+  font-style: italic;
+  text-align: center;
+  padding: 1rem;
 }
