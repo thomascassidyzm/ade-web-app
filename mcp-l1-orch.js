@@ -34,16 +34,20 @@ function connectWebSocket() {
     process.stderr.write('WebSocket connected\n');
     isConnected = true;
     
-    // Register as L1_ORCH
-    ws.send(JSON.stringify({
-      type: 'agent_connect',
-      agentId: 'L1_ORCH',
-      capabilities: ['orchestration', 'coordination', 'planning'],
-      metadata: {
-        powered_by: 'Claude Desktop Pro',
-        version: '1.0.0'
+    // Register as L1_ORCH after a small delay to ensure connection is stable
+    setTimeout(() => {
+      if (ws.readyState === WebSocket.OPEN) {
+        ws.send(JSON.stringify({
+          type: 'agent_connect',
+          agentId: 'L1_ORCH',
+          capabilities: ['orchestration', 'coordination', 'planning'],
+          metadata: {
+            powered_by: 'Claude Desktop Pro',
+            version: '1.0.0'
+          }
+        }));
       }
-    }));
+    }, 100);
   });
   
   ws.on('message', (data) => {
@@ -145,6 +149,14 @@ function handleMCPRequest(request) {
           version: '1.0.0'
         }
       });
+      break;
+      
+    case 'resources/list':
+      sendResponse(id, { resources: [] });
+      break;
+      
+    case 'prompts/list':
+      sendResponse(id, { prompts: [] });
       break;
       
     case 'tools/list':
