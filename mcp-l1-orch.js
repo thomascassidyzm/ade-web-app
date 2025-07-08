@@ -570,4 +570,6 @@ function sendError(id, code, message) {
 // Start
 process.stderr.write('ADE L1_ORCH MCP Server starting...\n');
 connectWebSocket();
-startMCPServer();
+
+// Start reading MCP commands
+rl.on('line', handleLine);
