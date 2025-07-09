@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ADE - Application Development Engine</title>
-  <link rel="stylesheet" href="styles-new.css">
+  <link rel="stylesheet" href="styles-dark.css">
 </head>
 <body>
   <div id="app">
@@ -13,7 +13,12 @@
       <div class="logo">
         <h1>ADE</h1>
         <span class="tagline">Build in minutes, not months</span>
-        <a href="about.html" style="display: block; margin-top: 0.5rem; font-size: 0.875rem; color: var(--gray-600); text-decoration: none;">What is ADE?</a>
+        <a href="about.html" class="about-link">What is ADE?</a>
+      </div>
+      
+      <div class="connection-status" id="connection-status">
+        <span class="status-dot"></span>
+        <span class="status-text">Connecting...</span>
       </div>
       
       <div class="phase-progress">
@@ -67,10 +72,12 @@
               </button>
               
               <div class="feature-chips">
-                <span class="chip">🎙️ Add Voice</span>
-                <span class="chip">🤖 Add AI</span>
-                <span class="chip">💳 Add Payments</span>
-                <span class="chip">⚡ Add Real-time</span>
+                <span class="chip">🎙️ Voice Interface</span>
+                <span class="chip">🤖 AI Assistant</span>
+                <span class="chip">💳 Payments</span>
+                <span class="chip">⚡ Real-time</span>
+                <span class="chip">📱 Mobile</span>
+                <span class="chip">🔒 Security</span>
               </div>
             </div>
           </div>
@@ -79,8 +86,8 @@
             <h3>Chat with ADE</h3>
             <div id="chat-messages" class="chat-container">
               <div class="chat-welcome">
-                <p>👋 Hi! I'm ADE.</p>
-                <p>Tell me what you want to build and I'll make it happen!</p>
+                <p>Welcome to ADE</p>
+                <p>Tell me what you want to build and I'll make it happen using advanced AI orchestration.</p>
               </div>
             </div>
           </div>

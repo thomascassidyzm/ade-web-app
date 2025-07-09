@@ -176,6 +176,32 @@ class ADEApp {
       .replace(/\n/g, '<br>')
       .replace(/• /g, '&bull; ');
   }
+  
+  updateConnectionStatus(status) {
+    const statusEl = document.getElementById('connection-status');
+    if (!statusEl) return;
+    
+    const statusText = statusEl.querySelector('.status-text');
+    
+    switch(status) {
+      case 'connecting':
+        statusEl.className = 'connection-status';
+        statusText.textContent = 'Connecting...';
+        break;
+      case 'connected':
+        statusEl.className = 'connection-status connected';
+        statusText.textContent = 'Ready';
+        break;
+      case 'disconnected':
+        statusEl.className = 'connection-status';
+        statusText.textContent = 'Reconnecting...';
+        break;
+      case 'error':
+        statusEl.className = 'connection-status';
+        statusText.textContent = 'Connection error';
+        break;
+    }
+  }
 
   updatePhase(phase) {
     this.currentPhase = phase;
