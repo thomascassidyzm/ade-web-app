@@ -63,6 +63,34 @@ class VirtualFileSystem {
       return [];
     }
   }
+
+  async getStructure() {
+    // Return the complete VFS structure
+    const structure = {};
+    
+    const scanDir = async (dir, obj) => {
+      const fullPath = path.join(this.basePath, dir);
+      try {
+        const items = await fs.readdir(fullPath);
+        for (const item of items) {
+          if (item.startsWith('.')) continue;
+          const itemPath = path.join(dir, item);
+          const stats = await fs.stat(path.join(this.basePath, itemPath));
+          if (stats.isDirectory()) {
+            obj[item] = {};
+            await scanDir(itemPath, obj[item]);
+          } else {
+            obj[item] = 'file';
+          }
+        }
+      } catch (error) {
+        // Directory doesn't exist
+      }
+    };
+    
+    await scanDir('', structure);
+    return structure;
+  }
 }
 
 module.exports = VirtualFileSystem;

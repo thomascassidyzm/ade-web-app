@@ -208,6 +208,12 @@ app.get('/api/vfs/read/*', async (req, res) => {
   res.json(result);
 });
 
+// Support both /api/vfs/list and /api/vfs/list/*
+app.get('/api/vfs/list', async (req, res) => {
+  const files = await vfs.list('');
+  res.json({ files });
+});
+
 app.get('/api/vfs/list/*', async (req, res) => {
   const directory = req.params[0] || '';
   const files = await vfs.list(directory);
