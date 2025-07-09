@@ -111,12 +111,9 @@ rl.on('line', (line) => {
     if (!request || typeof request !== 'object') {
       throw new Error('Invalid request format');
     }
-    if (request.id === undefined) {
-      throw new Error('Missing request id');
-    }
     handleMCPRequest(request);
   } catch (e) {
-    // If we can't parse or validate, send error with id -1
+    // If we can't parse or validate, send error with id null
     const errorResponse = {
       jsonrpc: '2.0',
       id: null,
@@ -132,16 +129,19 @@ rl.on('line', (line) => {
 function handleMCPRequest(request) {
   const { method, params, id } = request;
   
+  // Handle null/undefined id
+  const requestId = id !== undefined ? id : null;
+  
   // Extra validation
   if (!method) {
-    sendError(id || null, -32600, 'Invalid request: missing method');
+    sendError(requestId, -32600, 'Invalid request: missing method');
     return;
   }
   
   switch (method) {
     case 'initialize':
       connectWebSocket(); // Connect when MCP initializes
-      sendResponse(id, {
+      sendResponse(requestId, {
         protocolVersion: '2024-11-05',
         capabilities: { tools: {} },
         serverInfo: {
@@ -152,15 +152,15 @@ function handleMCPRequest(request) {
       break;
       
     case 'resources/list':
-      sendResponse(id, { resources: [] });
+      sendResponse(requestId, { resources: [] });
       break;
       
     case 'prompts/list':
-      sendResponse(id, { prompts: [] });
+      sendResponse(requestId, { prompts: [] });
       break;
       
     case 'tools/list':
-      sendResponse(id, {
+      sendResponse(requestId, {
         tools: [
           {
             name: 'get_messages',
@@ -310,18 +310,18 @@ function handleMCPRequest(request) {
       
     case 'tools/call':
       if (!params || !params.name) {
-        sendError(id, -32602, 'Invalid params: missing tool name');
+        sendError(requestId, -32602, 'Invalid params: missing tool name');
         return;
       }
       try {
-        handleToolCall(params.name, params.arguments || {}, id);
+        handleToolCall(params.name, params.arguments || {}, requestId);
       } catch (error) {
-        sendError(id, -32603, `Tool execution error: ${error.message}`);
+        sendError(requestId, -32603, `Tool execution error: ${error.message}`);
       }
       break;
       
     default:
-      sendError(id, -32601, 'Method not found');
+      sendError(requestId, -32601, 'Method not found');
   }
 }
 
@@ -393,16 +393,6 @@ function handleToolCall(tool, args, id) {
       } else {
         sendError(id, -32603, 'WebSocket not connected');
       }
-      break;
-      
-    case 'create_worker':
-      // This would create a worker agent
-      sendResponse(id, {
-        content: [{
-          type: 'text',
-          text: `Would create ${args.type} worker (not implemented yet)`
-        }]
-      });
       break;
       
     case 'orchestrate_build':
@@ -519,6 +509,10 @@ function handleToolCall(tool, args, id) {
       
     case 'read_vfs_file':
       // Make HTTP request to read VFS file
+      if (!args.path) {
+        sendError(id, -32602, 'Missing required parameter: path');
+        return;
+      }
       const readUrl = `${ADE_HTTP_URL}/api/vfs/${args.path}`;
       http.get(readUrl, (res) => {
         let data = '';
@@ -578,31 +572,6 @@ function sendError(id, code, message) {
     }
   }));
 }
-
-// MCP Request handling
-rl.on('line', (line) => {
-  process.stderr.write(`MCP Request: ${line}\n`);
-  try {
-    const request = JSON.parse(line);
-    if (!request || typeof request !== 'object') {
-      throw new Error('Invalid request format');
-    }
-    if (request.id === undefined) {
-      throw new Error('Missing request id');
-    }
-    handleMCPRequest(request);
-  } catch (e) {
-    const errorResponse = {
-      jsonrpc: '2.0',
-      id: null,
-      error: {
-        code: -32700,
-        message: 'Parse error: ' + e.message
-      }
-    };
-    console.log(JSON.stringify(errorResponse));
-  }
-});
 
 // Start
 process.stderr.write('ADE L1_ORCH MCP Server starting...\n');
