@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ADE - Application Development Environment</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <div class="container">
+    <header>
+      <h1>ADE</h1>
+      <p>Build enterprise apps in minutes, not months</p>
+      <div id="connection-status" class="connection-status">
+        <span class="status-dot"></span>
+        <span class="status-text">Connecting...</span>
+      </div>
+    </header>
+    
+    <div class="dashboard">
+      <aside class="sidebar">
+        <div class="panel">
+          <h3>🔌 Connections</h3>
+          <div id="connections-list">
+            <div class="connection-item">
+              <span class="conn-label">Web Socket:</span>
+              <span id="ws-status" class="conn-status">-</span>
+            </div>
+            <div class="connection-item">
+              <span class="conn-label">MCP Bridge:</span>
+              <span id="mcp-status" class="conn-status">-</span>
+            </div>
+            <div class="connection-item">
+              <span class="conn-label">L1_ORCH:</span>
+              <span id="orch-status" class="conn-status">-</span>
+            </div>
+          </div>
+        </div>
+        
+        <div class="panel">
+          <h3>🤖 Active Agents</h3>
+          <div id="agents-list" class="agents-list">
+            <p class="empty-state">No agents active</p>
+          </div>
+        </div>
+        
+        <div class="panel">
+          <h3>📁 VFS Files</h3>
+          <div id="vfs-browser" class="vfs-browser">
+            <p class="empty-state">No files yet</p>
+          </div>
+        </div>
+      </aside>
+      
+      <main class="main-content">
+        <section id="think-phase">
+          <h2>💬 THINK: Describe Your App</h2>
+          <textarea 
+            id="app-description" 
+            placeholder="I want to build a family sharing app like Netflix..."
+            rows="6"
+          ></textarea>
+          <button id="submit-btn">Start Building</button>
+        </section>
+        
+        <section id="chat-interface">
+          <h3>🤖 L1_ORCH Conversation</h3>
+          <div id="chat-messages" class="chat-container">
+            <div class="chat-welcome">Waiting for L1_ORCH connection...</div>
+          </div>
+        </section>
+        
+        <section id="activity-log">
+          <h3>📊 Activity Log</h3>
+          <div id="activity-messages" class="activity-log"></div>
+        </section>
+      </main>
+    </div>
+  </div>
+  
+  <script src="app.js"></script>
+</body>
+</html>

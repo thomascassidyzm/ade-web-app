@@ -1,19 +1,17 @@
-class ADEClient {
+class ADEApp {
   constructor() {
     this.ws = null;
+    this.currentPhase = 'specify';
     this.connected = false;
-    this.agents = new Map();
-    this.vfsFiles = new Set();
-    this.activityLog = [];
     this.init();
   }
-  
+
   init() {
     this.connectWebSocket();
     this.setupEventListeners();
-    this.startStatusPolling();
+    this.initializePhaseUI();
   }
-  
+
   connectWebSocket() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}`;
@@ -22,9 +20,7 @@ class ADEClient {
     
     this.ws.onopen = () => {
       this.connected = true;
-      this.updateConnectionStatus('ws', 'Connected');
-      this.updateMainStatus('Connected', 'connected');
-      this.logActivity('system', 'WebSocket connected');
+      console.log('Connected to ADE server');
     };
     
     this.ws.onmessage = (event) => {
@@ -38,274 +34,309 @@ class ADEClient {
     
     this.ws.onclose = () => {
       this.connected = false;
-      this.updateConnectionStatus('ws', 'Disconnected');
-      this.updateMainStatus('Disconnected', 'error');
-      this.logActivity('system', 'WebSocket disconnected');
       setTimeout(() => this.connectWebSocket(), 3000);
     };
-    
-    this.ws.onerror = (error) => {
-      console.error('WebSocket error:', error);
-      this.updateConnectionStatus('ws', 'Error');
-      this.logActivity('system', 'Connection error');
-    };
   }
-  
+
   setupEventListeners() {
-    const submitBtn = document.getElementById('submit-btn');
-    const descriptionInput = document.getElementById('app-description');
-    
-    submitBtn.addEventListener('click', () => {
-      const description = descriptionInput.value.trim();
-      if (description && this.connected) {
-        this.sendDescription(description);
-      }
+    // Start Building button
+    const startBtn = document.getElementById('start-building');
+    if (startBtn) {
+      startBtn.addEventListener('click', () => this.startBuilding());
+    }
+
+    // Feature chips
+    document.querySelectorAll('.chip').forEach(chip => {
+      chip.addEventListener('click', (e) => this.toggleFeature(e.target));
     });
-    
-    descriptionInput.addEventListener('keydown', (e) => {
-      if (e.key === 'Enter' && e.ctrlKey) {
-        submitBtn.click();
-      }
-    });
-  }
-  
-  sendDescription(description) {
-    const message = {
-      type: 'app_description',
-      description: description,
-      timestamp: new Date().toISOString()
-    };
-    
-    this.ws.send(JSON.stringify(message));
-    this.logActivity('user', `Sent: "${description}"`);
-    
-    // Also show in chat interface
-    this.addChatMessage('user', description);
-  }
-  
-  handleMessage(data) {
-    this.logActivity('message', `${data.type}: ${JSON.stringify(data).substring(0, 100)}...`);
-    
-    switch(data.type) {
-      case 'worker_created':
-        this.addAgent(data);
-        break;
-      case 'vfs_write':
-        this.updateVFS(data.content.path);
-        break;
-      case 'agent_status':
-        this.updateAgentStatus(data.agentId, data.status);
-        break;
-      case 'mcp_connected':
-        this.updateConnectionStatus('mcp', 'Connected');
-        break;
-      case 'orch_connected':
-        this.updateConnectionStatus('orch', 'Connected');
-        break;
-      case 'apml_from_orch':
-        this.displayOrchMessage(data.content);
-        break;
-      default:
-        console.log('Unhandled message type:', data.type);
-    }
-  }
-  
-  addAgent(agentData) {
-    this.agents.set(agentData.agentId, agentData);
-    this.renderAgents();
-    this.logActivity('agent', `Spawned ${agentData.agentType} agent: ${agentData.agentId}`);
-  }
-  
-  updateAgentStatus(agentId, status) {
-    const agent = this.agents.get(agentId);
-    if (agent) {
-      agent.status = status;
-      this.renderAgents();
-      this.logActivity('agent', `${agentId} status: ${status}`);
-    }
-  }
-  
-  updateVFS(path) {
-    this.vfsFiles.add(path);
-    this.renderVFS();
-    this.logActivity('vfs', `File written: ${path}`);
-  }
-  
-  renderAgents() {
-    const container = document.getElementById('agents-list');
-    
-    if (this.agents.size === 0) {
-      container.innerHTML = '<p class="empty-state">No agents active</p>';
-      return;
-    }
-    
-    container.innerHTML = Array.from(this.agents.values())
-      .map(agent => `
-        <div class="agent-item">
-          <div class="agent-name">${agent.agentType} (${agent.agentId})</div>
-          <div class="agent-status">Status: ${agent.status}</div>
-        </div>
-      `).join('');
-  }
-  
-  renderVFS() {
-    const container = document.getElementById('vfs-browser');
-    
-    if (this.vfsFiles.size === 0) {
-      container.innerHTML = '<p class="empty-state">No files yet</p>';
-      return;
-    }
-    
-    // Group files by directory
-    const tree = {};
-    this.vfsFiles.forEach(path => {
-      const parts = path.split('/');
-      let current = tree;
-      parts.forEach((part, i) => {
-        if (i === parts.length - 1) {
-          current[part] = 'file';
-        } else {
-          current[part] = current[part] || {};
-          current = current[part];
+
+    // Phase navigation
+    document.querySelectorAll('.phase-item').forEach(item => {
+      item.addEventListener('click', (e) => {
+        const phase = e.currentTarget.dataset.phase;
+        if (this.canNavigateToPhase(phase)) {
+          this.navigateToPhase(phase);
         }
       });
     });
-    
-    container.innerHTML = this.renderTree(tree);
+
+    // Eye test choices
+    document.querySelectorAll('.choice-btn').forEach(btn => {
+      btn.addEventListener('click', (e) => {
+        const choice = e.currentTarget.dataset.choice;
+        this.selectDesignChoice(choice);
+      });
+    });
   }
-  
-  renderTree(tree, level = 0) {
-    return Object.entries(tree)
-      .map(([name, value]) => {
-        if (value === 'file') {
-          return `<div class="vfs-item vfs-file" style="padding-left: ${level * 20}px">📄 ${name}</div>`;
-        } else {
-          return `
-            <div class="vfs-item vfs-folder" style="padding-left: ${level * 20}px">📁 ${name}/</div>
-            ${this.renderTree(value, level + 1)}
-          `;
-        }
-      }).join('');
+
+  initializePhaseUI() {
+    // Initialize with SPECIFY phase
+    this.showPhase('specify');
   }
-  
-  logActivity(type, message) {
-    const entry = {
-      time: new Date().toLocaleTimeString(),
-      type,
-      message
-    };
+
+  startBuilding() {
+    const description = document.getElementById('app-description').value.trim();
+    if (!description) {
+      alert('Please describe your app idea first');
+      return;
+    }
+
+    // Get selected features
+    const selectedFeatures = Array.from(document.querySelectorAll('.chip.selected'))
+      .map(chip => chip.textContent.trim());
+
+    // Send to server
+    this.ws.send(JSON.stringify({
+      type: 'app_description',
+      description: description,
+      features: selectedFeatures,
+      timestamp: new Date().toISOString()
+    }));
+
+    // Add to chat
+    this.addChatMessage('user', description);
     
-    this.activityLog.push(entry);
-    
-    const container = document.getElementById('activity-messages');
-    const entryEl = document.createElement('div');
-    entryEl.className = 'activity-entry';
-    entryEl.innerHTML = `
-      <span class="activity-time">${entry.time}</span>
-      <span class="activity-type ${type}">${type.toUpperCase()}</span>
-      <span class="activity-message">${message}</span>
-    `;
-    
-    container.appendChild(entryEl);
-    container.scrollTop = container.scrollHeight;
+    // Update UI
+    document.getElementById('start-building').disabled = true;
+    document.getElementById('start-building').textContent = 'Processing...';
   }
-  
+
+  toggleFeature(chip) {
+    chip.classList.toggle('selected');
+    if (chip.classList.contains('selected')) {
+      chip.style.background = 'var(--primary)';
+      chip.style.color = 'white';
+      chip.style.borderColor = 'var(--primary)';
+    } else {
+      chip.style.background = '';
+      chip.style.color = '';
+      chip.style.borderColor = '';
+    }
+  }
+
+  handleMessage(data) {
+    switch(data.type) {
+      case 'phase_update':
+        this.updatePhase(data.phase);
+        break;
+        
+      case 'apml_from_orch':
+        this.displayOrchMessage(data.content);
+        break;
+        
+      case 'visualization_ready':
+        this.showVisualization(data.content);
+        break;
+        
+      case 'agent_progress':
+        this.updateAgentProgress(data);
+        break;
+        
+      case 'build_complete':
+        this.onBuildComplete(data);
+        break;
+        
+      case 'eyetest_item':
+        this.showEyeTestItem(data);
+        break;
+        
+      case 'deployment_ready':
+        this.showDeployment(data);
+        break;
+    }
+  }
+
   displayOrchMessage(content) {
     const message = content.message || JSON.stringify(content);
-    this.logActivity('L1_ORCH', message);
-    
-    // Display in chat interface
     this.addChatMessage('orch', message);
-    
-    // If there's a phase, update UI accordingly
-    if (content.phase) {
-      this.logActivity('system', `Phase: ${content.phase}`);
-    }
   }
-  
+
   addChatMessage(sender, message) {
     const container = document.getElementById('chat-messages');
+    if (!container) return;
     
-    // Remove welcome message if it exists
+    // Remove welcome message
     const welcome = container.querySelector('.chat-welcome');
-    if (welcome) {
-      welcome.remove();
-    }
+    if (welcome) welcome.remove();
     
     const messageEl = document.createElement('div');
     messageEl.className = `chat-message ${sender}`;
-    
-    const senderLabel = sender === 'user' ? 'You' : 'L1_ORCH';
-    messageEl.innerHTML = `
-      <div class="sender">${senderLabel}</div>
-      <div class="content">${message}</div>
-    `;
+    messageEl.innerHTML = sender === 'user' 
+      ? message 
+      : this.formatOrchMessage(message);
     
     container.appendChild(messageEl);
     container.scrollTop = container.scrollHeight;
   }
-  
-  updateConnectionStatus(service, status) {
-    const element = document.getElementById(`${service}-status`);
-    if (element) {
-      element.textContent = status;
-      element.className = `conn-status ${status === 'Connected' ? 'connected' : 'disconnected'}`;
+
+  formatOrchMessage(message) {
+    // Convert markdown-style formatting
+    return message
+      .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+      .replace(/\n/g, '<br>')
+      .replace(/• /g, '&bull; ');
+  }
+
+  updatePhase(phase) {
+    this.currentPhase = phase;
+    
+    // Update progress bar
+    const phases = ['specify', 'visualize', 'build', 'eye-test', 'deploy'];
+    const currentIndex = phases.indexOf(phase);
+    
+    document.querySelectorAll('.phase-item').forEach((item, index) => {
+      if (index < currentIndex) {
+        item.classList.add('completed');
+        item.classList.remove('active');
+      } else if (index === currentIndex) {
+        item.classList.add('active');
+        item.classList.remove('completed');
+      } else {
+        item.classList.remove('active', 'completed');
+      }
+    });
+    
+    // Update connectors
+    document.querySelectorAll('.phase-connector').forEach((conn, index) => {
+      if (index < currentIndex) {
+        conn.classList.add('completed');
+      } else {
+        conn.classList.remove('completed');
+      }
+    });
+    
+    // Show appropriate phase content
+    this.showPhase(phase);
+  }
+
+  showPhase(phase) {
+    document.querySelectorAll('.phase-content').forEach(content => {
+      content.classList.remove('active');
+    });
+    
+    const phaseContent = document.getElementById(`${phase}-phase`);
+    if (phaseContent) {
+      phaseContent.classList.add('active');
     }
   }
-  
-  updateMainStatus(text, state) {
-    const dot = document.querySelector('.status-dot');
-    const statusText = document.querySelector('.status-text');
+
+  canNavigateToPhase(phase) {
+    const phases = ['specify', 'visualize', 'build', 'eye-test', 'deploy'];
+    const currentIndex = phases.indexOf(this.currentPhase);
+    const targetIndex = phases.indexOf(phase);
     
-    statusText.textContent = text;
-    dot.className = `status-dot ${state}`;
+    // Can only go to completed phases or current phase
+    return targetIndex <= currentIndex;
   }
-  
-  async startStatusPolling() {
-    setInterval(async () => {
-      if (this.connected) {
-        try {
-          const response = await fetch('/api/status');
-          const data = await response.json();
-          
-          // Check MCP/Railway connection
-          if (data.connections > 0) {
-            this.updateConnectionStatus('mcp', 'Connected');
-          }
-          
-          // Fetch agents
-          const agentsResponse = await fetch('/api/agents');
-          const agentsData = await agentsResponse.json();
-          
-          if (agentsData.agents) {
-            agentsData.agents.forEach(agent => {
-              if (!this.agents.has(agent.id)) {
-                this.addAgent({
-                  agentId: agent.id,
-                  agentType: agent.type,
-                  status: agent.status
-                });
-              }
-            });
-          }
-          
-          // Fetch VFS files
-          const vfsResponse = await fetch('/api/vfs/list/');
-          const vfsData = await vfsResponse.json();
-          
-          if (vfsData.files) {
-            vfsData.files.forEach(file => this.vfsFiles.add(file));
-            this.renderVFS();
-          }
-        } catch (error) {
-          console.error('Status polling error:', error);
-        }
-      }
-    }, 5000);
+
+  navigateToPhase(phase) {
+    if (this.canNavigateToPhase(phase)) {
+      this.showPhase(phase);
+    }
+  }
+
+  showVisualization(content) {
+    this.updatePhase('visualize');
+    
+    // Render wireframes
+    const wireframeContainer = document.getElementById('screens-wireframe');
+    if (wireframeContainer && content.screens) {
+      wireframeContainer.innerHTML = this.renderWireframes(content.screens);
+    }
+    
+    // Render flows
+    const flowsContainer = document.getElementById('message-flows');
+    if (flowsContainer && content.flows) {
+      flowsContainer.innerHTML = this.renderFlows(content.flows);
+    }
+  }
+
+  renderWireframes(screens) {
+    return screens.map(screen => `
+      <div class="wireframe-screen">
+        <h4>${screen.name}</h4>
+        <div class="wireframe-elements">
+          ${screen.elements.map(el => `<div class="wireframe-element ${el.type}">${el.label}</div>`).join('')}
+        </div>
+      </div>
+    `).join('');
+  }
+
+  renderFlows(flows) {
+    return flows.map(flow => `
+      <div class="flow-item">
+        <span class="flow-type ${flow.type}">${flow.type}</span>
+        <span class="flow-arrow">→</span>
+        <span class="flow-description">${flow.description}</span>
+      </div>
+    `).join('');
+  }
+
+  updateAgentProgress(data) {
+    const agentCard = document.querySelector(`[data-agent="${data.agent}"]`);
+    if (!agentCard) return;
+    
+    agentCard.classList.add('active');
+    
+    const statusEl = agentCard.querySelector('.agent-status');
+    if (statusEl) statusEl.textContent = data.status;
+    
+    const progressFill = agentCard.querySelector('.progress-fill');
+    if (progressFill) progressFill.style.width = `${data.progress}%`;
+    
+    // Add to build log
+    const buildLog = document.getElementById('build-messages');
+    if (buildLog) {
+      const logEntry = document.createElement('div');
+      logEntry.className = 'log-entry';
+      logEntry.textContent = `[${data.agent}] ${data.message}`;
+      buildLog.appendChild(logEntry);
+      buildLog.scrollTop = buildLog.scrollHeight;
+    }
+  }
+
+  showEyeTestItem(data) {
+    this.updatePhase('eye-test');
+    
+    // Update test info
+    document.getElementById('test-item').textContent = data.item;
+    document.getElementById('test-description').textContent = data.description;
+    
+    // Update progress
+    const progress = (data.current / data.total) * 100;
+    document.querySelector('.test-count').textContent = `${data.current} of ${data.total}`;
+    document.querySelector('.eyetest-container .progress-fill').style.width = `${progress}%`;
+    
+    // Show options
+    // This would render the actual UI elements being tested
+  }
+
+  selectDesignChoice(choice) {
+    this.ws.send(JSON.stringify({
+      type: 'eyetest_choice',
+      choice: choice,
+      timestamp: new Date().toISOString()
+    }));
+  }
+
+  showDeployment(data) {
+    this.updatePhase('deploy');
+    
+    // Update deployment info
+    document.querySelector('.app-url').href = data.appUrl;
+    document.querySelector('.app-url').textContent = data.appUrl;
+    document.querySelector('.admin-url').href = data.adminUrl;
+    document.querySelector('.github-url').href = data.githubUrl;
+    document.querySelector('.build-time').textContent = data.buildTime;
+  }
+
+  onBuildComplete(data) {
+    // Move to eye-test phase automatically
+    this.updatePhase('eye-test');
   }
 }
 
 // Initialize when DOM is ready
 document.addEventListener('DOMContentLoaded', () => {
-  window.adeClient = new ADEClient();
+  window.adeApp = new ADEApp();
 });

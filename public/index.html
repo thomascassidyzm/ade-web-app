@@ -3,81 +3,275 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ADE - Application Development Environment</title>
-  <link rel="stylesheet" href="styles.css">
+  <title>ADE - Application Development Engine</title>
+  <link rel="stylesheet" href="styles-new.css">
 </head>
 <body>
-  <div class="container">
-    <header>
-      <h1>ADE</h1>
-      <p>Build enterprise apps in minutes, not months</p>
-      <div id="connection-status" class="connection-status">
-        <span class="status-dot"></span>
-        <span class="status-text">Connecting...</span>
+  <div id="app">
+    <!-- Header with Phase Progress -->
+    <header class="ade-header">
+      <div class="logo">
+        <h1>ADE</h1>
+        <span class="tagline">Build in minutes, not months</span>
+      </div>
+      
+      <div class="phase-progress">
+        <div class="phase-item active" data-phase="specify">
+          <span class="phase-number">1</span>
+          <span class="phase-name">SPECIFY</span>
+        </div>
+        <div class="phase-connector"></div>
+        <div class="phase-item" data-phase="visualize">
+          <span class="phase-number">2</span>
+          <span class="phase-name">VISUALIZE</span>
+        </div>
+        <div class="phase-connector"></div>
+        <div class="phase-item" data-phase="build">
+          <span class="phase-number">3</span>
+          <span class="phase-name">BUILD</span>
+        </div>
+        <div class="phase-connector"></div>
+        <div class="phase-item" data-phase="eye-test">
+          <span class="phase-number">4</span>
+          <span class="phase-name">EYE-TEST</span>
+        </div>
+        <div class="phase-connector"></div>
+        <div class="phase-item" data-phase="deploy">
+          <span class="phase-number">5</span>
+          <span class="phase-name">DEPLOY</span>
+        </div>
       </div>
     </header>
-    
-    <div class="dashboard">
-      <aside class="sidebar">
-        <div class="panel">
-          <h3>🔌 Connections</h3>
-          <div id="connections-list">
-            <div class="connection-item">
-              <span class="conn-label">Web Socket:</span>
-              <span id="ws-status" class="conn-status">-</span>
-            </div>
-            <div class="connection-item">
-              <span class="conn-label">MCP Bridge:</span>
-              <span id="mcp-status" class="conn-status">-</span>
-            </div>
-            <div class="connection-item">
-              <span class="conn-label">L1_ORCH:</span>
-              <span id="orch-status" class="conn-status">-</span>
-            </div>
-          </div>
-        </div>
-        
-        <div class="panel">
-          <h3>🤖 Active Agents</h3>
-          <div id="agents-list" class="agents-list">
-            <p class="empty-state">No agents active</p>
-          </div>
-        </div>
-        
-        <div class="panel">
-          <h3>📁 VFS Files</h3>
-          <div id="vfs-browser" class="vfs-browser">
-            <p class="empty-state">No files yet</p>
-          </div>
-        </div>
-      </aside>
+
+    <!-- Main Content Area (changes based on phase) -->
+    <main class="ade-main">
       
-      <main class="main-content">
-        <section id="think-phase">
-          <h2>💬 THINK: Describe Your App</h2>
-          <textarea 
-            id="app-description" 
-            placeholder="I want to build a family sharing app like Netflix..."
-            rows="6"
-          ></textarea>
-          <button id="submit-btn">Start Building</button>
-        </section>
-        
-        <section id="chat-interface">
-          <h3>🤖 L1_ORCH Conversation</h3>
-          <div id="chat-messages" class="chat-container">
-            <div class="chat-welcome">Waiting for L1_ORCH connection...</div>
+      <!-- SPECIFY Phase -->
+      <section id="specify-phase" class="phase-content active">
+        <div class="specify-container">
+          <div class="specify-prompt">
+            <h2>What would you like to build?</h2>
+            <p>Describe your app idea in natural language. Be specific about features and functionality.</p>
+            
+            <textarea 
+              id="app-description"
+              placeholder="I want to build a family sharing app like Netflix where family members can create profiles, share subscriptions, and track usage..."
+              rows="8"
+            ></textarea>
+            
+            <div class="specify-actions">
+              <button id="start-building" class="primary-btn">
+                Start Building
+                <span class="time-estimate">~15 min</span>
+              </button>
+              
+              <div class="feature-chips">
+                <span class="chip">🎙️ Add Voice</span>
+                <span class="chip">🤖 Add AI</span>
+                <span class="chip">💳 Add Payments</span>
+                <span class="chip">⚡ Add Real-time</span>
+              </div>
+            </div>
           </div>
-        </section>
-        
-        <section id="activity-log">
-          <h3>📊 Activity Log</h3>
-          <div id="activity-messages" class="activity-log"></div>
-        </section>
-      </main>
-    </div>
+          
+          <div class="specify-chat">
+            <h3>Conversation with L1_ORCH</h3>
+            <div id="chat-messages" class="chat-container">
+              <div class="chat-welcome">
+                <p>I'm L1_ORCH, your AI orchestrator.</p>
+                <p>Tell me about your app idea and I'll help you build it using our advanced component library.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- VISUALIZE Phase -->
+      <section id="visualize-phase" class="phase-content">
+        <div class="visualize-container">
+          <div class="panel screens-panel">
+            <h3>App Screens</h3>
+            <div id="screens-wireframe" class="wireframe-container">
+              <!-- Wireframe screens will be rendered here -->
+            </div>
+          </div>
+          
+          <div class="panel flows-panel">
+            <h3>APML Message Flows</h3>
+            <div id="message-flows" class="flows-container">
+              <!-- Flow diagrams will be rendered here -->
+            </div>
+          </div>
+          
+          <div class="panel control-panel">
+            <h3>Review & Approve</h3>
+            <div class="phase-info">
+              <p>Review all screens and flows to ensure completeness.</p>
+              <p>Every possible user interaction must be defined.</p>
+            </div>
+            
+            <div class="approval-actions">
+              <button class="secondary-btn">Request Changes</button>
+              <button class="primary-btn">Approve & Build</button>
+            </div>
+            
+            <div class="chat-mini">
+              <h4>Chat with L1_ORCH</h4>
+              <div id="visualize-chat" class="mini-chat"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- BUILD Phase -->
+      <section id="build-phase" class="phase-content">
+        <div class="build-container">
+          <div class="build-progress">
+            <h2>Building Your Application</h2>
+            <div class="agents-grid">
+              <div class="agent-card" data-agent="frontend">
+                <div class="agent-icon">🎨</div>
+                <h4>Frontend Agent</h4>
+                <div class="agent-status">Creating Vue components...</div>
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 0%"></div>
+                </div>
+              </div>
+              
+              <div class="agent-card" data-agent="backend">
+                <div class="agent-icon">⚙️</div>
+                <h4>Backend Agent</h4>
+                <div class="agent-status">Building API endpoints...</div>
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 0%"></div>
+                </div>
+              </div>
+              
+              <div class="agent-card" data-agent="database">
+                <div class="agent-icon">🗄️</div>
+                <h4>Database Agent</h4>
+                <div class="agent-status">Creating data models...</div>
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 0%"></div>
+                </div>
+              </div>
+              
+              <div class="agent-card" data-agent="testing">
+                <div class="agent-icon">🧪</div>
+                <h4>Testing Agent</h4>
+                <div class="agent-status">Writing test suites...</div>
+                <div class="progress-bar">
+                  <div class="progress-fill" style="width: 0%"></div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="build-log">
+              <h3>Build Log</h3>
+              <div id="build-messages" class="log-container"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- EYE-TEST Phase -->
+      <section id="eyetest-phase" class="phase-content">
+        <div class="eyetest-container">
+          <div class="panel option-a">
+            <h3>Option A</h3>
+            <div id="option-a-preview" class="design-preview">
+              <!-- Option A UI will be rendered here -->
+            </div>
+          </div>
+          
+          <div class="panel option-b">
+            <h3>Option B</h3>
+            <div id="option-b-preview" class="design-preview">
+              <!-- Option B UI will be rendered here -->
+            </div>
+          </div>
+          
+          <div class="panel preference-panel">
+            <h3>Your Design Preferences</h3>
+            <div class="current-test">
+              <h4 id="test-item">Button Style</h4>
+              <p id="test-description">Choose your preferred button design</p>
+            </div>
+            
+            <div class="preference-actions">
+              <button class="choice-btn" data-choice="a">
+                <span class="choice-key">A</span>
+                Prefer Option A
+              </button>
+              <button class="choice-btn" data-choice="b">
+                <span class="choice-key">B</span>
+                Prefer Option B
+              </button>
+            </div>
+            
+            <div class="test-progress">
+              <span class="test-count">1 of 12</span>
+              <div class="progress-bar">
+                <div class="progress-fill" style="width: 8%"></div>
+              </div>
+            </div>
+            
+            <div class="design-system-preview">
+              <h4>Your Design System</h4>
+              <div class="design-choices">
+                <!-- Selected design choices will appear here -->
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- DEPLOY Phase -->
+      <section id="deploy-phase" class="phase-content">
+        <div class="deploy-container">
+          <div class="deploy-success">
+            <div class="success-icon">🚀</div>
+            <h2>Your App is Ready!</h2>
+            <p>Successfully built and deployed in <span class="build-time">23 minutes</span></p>
+            
+            <div class="deploy-details">
+              <div class="deploy-card">
+                <h4>Live Application</h4>
+                <a href="#" class="app-url">https://your-app.vercel.app</a>
+                <button class="secondary-btn">Open App</button>
+              </div>
+              
+              <div class="deploy-card">
+                <h4>Admin Dashboard</h4>
+                <a href="#" class="admin-url">https://your-app.vercel.app/admin</a>
+                <button class="secondary-btn">Open Admin</button>
+              </div>
+              
+              <div class="deploy-card">
+                <h4>Source Code</h4>
+                <a href="#" class="github-url">github.com/your-app</a>
+                <button class="secondary-btn">View Code</button>
+              </div>
+            </div>
+            
+            <div class="next-steps">
+              <h3>What's Next?</h3>
+              <ul>
+                <li>✓ Your app is live and ready for users</li>
+                <li>✓ SSL certificate configured</li>
+                <li>✓ Database provisioned and migrated</li>
+                <li>✓ Analytics and monitoring active</li>
+              </ul>
+              
+              <button class="primary-btn">Build Another App</button>
+            </div>
+          </div>
+        </div>
+      </section>
+      
+    </main>
   </div>
   
-  <script src="app.js"></script>
+  <script src="app-new.js"></script>
 </body>
 </html>
