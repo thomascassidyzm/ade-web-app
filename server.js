@@ -20,139 +20,18 @@ app.use(express.static('public'));
 // WebSocket server
 const server = app.listen(PORT, () => {
   console.log(`ADE Server running on port ${PORT}`);
+  
+  // Start auto-save
+  setInterval(async () => {
+    await vfsPersistence.saveOnEvent('periodic');
+  }, 300000); // Every 5 minutes
 });
 
 const wss = new WebSocket.Server({ server });
 
 // Store active connections
 const clients = new Map();
-let bridgeWs = null;
-
-// Connect to MCP bridge
-function connectToBridge() {
-  // Don't connect to external bridge - we ARE the bridge
-  // bridgeWs = new WebSocket('wss://ade-app.up.railway.app');
-  
-  bridgeWs.on('open', () => {
-    console.log('Connected to MCP bridge');
-  });
-  
-  bridgeWs.on('message', async (message) => {
-    // Forward messages from bridge to all connected clients
-    const data = message.toString();
-    
-    // Handle VFS writes and agent creation
-    try {
-      const msg = JSON.parse(data);
-      
-      if (msg.type === 'vfs_write') {
-        const result = await vfs.write(msg.content.path, msg.content.content, msg.content.metadata);
-        console.log('VFS Write:', result);
-        
-        // Save snapshot on important writes
-        if (msg.content.path.includes('/specs/') || msg.content.path.includes('/components/')) {
-          await vfsPersistence.saveOnEvent('important_write');
-        }
-      }
-      
-      if (msg.type === 'create_worker') {
-        const agent = await agentSpawner.spawnAgent(msg.content.type, msg.content.taskId, vfs);
-        console.log('Agent spawned:', agent);
-        
-        // Send confirmation back
-        bridgeWs.send(JSON.stringify({
-          type: 'worker_created',
-          agentId: agent.id,
-          agentType: agent.type,
-          taskId: agent.taskId,
-          status: agent.status
-        }));
-      }
-      
-      if (msg.type === 'agent_connect' && msg.agentId === 'L1_ORCH') {
-        console.log('L1_ORCH connected');
-        
-        // Send updated phase guidance to L1_ORCH
-        bridgeWs.send(JSON.stringify({
-          type: 'apml',
-          content: `---
-apml: 1.0
-type: phase_guidance_v2
-from: ADE_SYSTEM
-to: L1_ORCH
-timestamp: ${new Date().toISOString()}
----
-content:
-  version: 2.0.0
-  message: "Updated ADE Phase Guidance - Reflecting our improved understanding"
-  phases: ${JSON.stringify(ADEPhases.phases, null, 2)}
-  key_principles: ${JSON.stringify(ADEPhases.key_principles, null, 2)}
-  time_compression: ${JSON.stringify(ADEPhases.time_compression, null, 2)}
-  instruction: "Use this updated guidance for the complete ADE flow: SPECIFY → VISUALIZE → BUILD → EYE-TEST → DEPLOY"`
-        }));
-        
-        // Also send existing libraries
-        bridgeWs.send(JSON.stringify({
-          type: 'apml',
-          content: `---
-apml: 1.0
-type: library_reminder
-from: ADE_SYSTEM
-to: L1_ORCH
----
-content:
-  message: "Remember: You have access to the complete APML component library and advanced capabilities"
-  components: ["auth", "navigation", "data_patterns", "ui_patterns", "business_features"]
-  capabilities: ["voice", "ai", "payments", "realtime", "location", "analytics", "media"]
-  use_existing: "Always use existing components/capabilities instead of creating from scratch"`
-        }));
-        
-        // Notify all web clients
-        clients.forEach((client) => {
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({
-              type: 'orch_connected',
-              timestamp: new Date().toISOString()
-            }));
-          }
-        });
-      }
-      
-      if (msg.type === 'apml_message' && msg.to === 'user') {
-        console.log('APML message for user:', msg);
-        // Forward to all web clients
-        clients.forEach((client) => {
-          if (client.readyState === WebSocket.OPEN) {
-            client.send(JSON.stringify({
-              type: 'apml_from_orch',
-              content: msg.content,
-              timestamp: new Date().toISOString()
-            }));
-          }
-        });
-      }
-    } catch (e) {
-      // Not JSON or not a command we handle, just forward
-    }
-    
-    clients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(data);
-      }
-    });
-  });
-  
-  bridgeWs.on('close', () => {
-    console.log('MCP bridge disconnected, reconnecting...');
-    setTimeout(connectToBridge, 3000);
-  });
-  
-  bridgeWs.on('error', (error) => {
-    console.error('Bridge connection error:', error.message);
-  });
-}
-
-connectToBridge();
+const pendingRequests = [];
 
 wss.on('connection', (ws) => {
   const clientId = Date.now().toString();
@@ -160,23 +39,122 @@ wss.on('connection', (ws) => {
   
   console.log(`New WebSocket connection: ${clientId}`);
   
-  ws.on('message', (message) => {
+  ws.on('message', async (message) => {
     try {
       const data = JSON.parse(message);
-      console.log('Received:', data);
+      console.log('Received:', data.type);
       
-      // Forward to MCP bridge
-      if (bridgeWs && bridgeWs.readyState === WebSocket.OPEN) {
-        bridgeWs.send(JSON.stringify(data));
-      } else {
-        ws.send(JSON.stringify({
-          type: 'error',
-          message: 'MCP bridge not connected',
-          timestamp: new Date().toISOString()
-        }));
+      switch(data.type) {
+        case 'agent_connect':
+          if (data.agentId === 'L1_ORCH') {
+            console.log('L1_ORCH connected');
+            
+            // Send phase guidance
+            ws.send(JSON.stringify({
+              type: 'phase_guidance',
+              phases: ADEPhases.phases,
+              key_principles: ADEPhases.key_principles,
+              time_compression: ADEPhases.time_compression,
+              timestamp: new Date().toISOString()
+            }));
+            
+            // Notify web clients
+            broadcast({
+              type: 'orch_connected',
+              timestamp: new Date().toISOString()
+            });
+          }
+          break;
+          
+        case 'vfs_write':
+          const result = await vfs.write(
+            data.content.path, 
+            data.content.content, 
+            data.content.metadata
+          );
+          console.log('VFS Write:', result);
+          
+          // Save snapshot on important writes
+          if (data.content.path.includes('/specs/') || 
+              data.content.path.includes('/components/')) {
+            await vfsPersistence.saveOnEvent('important_write');
+          }
+          
+          ws.send(JSON.stringify({
+            type: 'vfs_write_result',
+            result: result,
+            timestamp: new Date().toISOString()
+          }));
+          break;
+          
+        case 'create_worker':
+          const agent = await agentSpawner.spawnAgent(
+            data.content.type, 
+            data.content.taskId, 
+            vfs
+          );
+          console.log('Agent spawned:', agent);
+          
+          ws.send(JSON.stringify({
+            type: 'worker_created',
+            agentId: agent.id,
+            agentType: agent.type,
+            taskId: agent.taskId,
+            status: agent.status
+          }));
+          break;
+          
+        case 'user_request':
+          // From web UI
+          pendingRequests.push({
+            ...data,
+            receivedAt: new Date().toISOString()
+          });
+          
+          // Acknowledge
+          ws.send(JSON.stringify({
+            type: 'request_acknowledged',
+            message: 'Your request has been queued',
+            timestamp: new Date().toISOString()
+          }));
+          
+          // Notify all clients
+          broadcast({
+            type: 'new_request_available',
+            count: pendingRequests.length
+          });
+          break;
+          
+        case 'get_pending_requests':
+          // L1_ORCH checking for requests
+          ws.send(JSON.stringify({
+            type: 'pending_requests',
+            requests: pendingRequests,
+            count: pendingRequests.length
+          }));
+          
+          // Clear after sending
+          pendingRequests.length = 0;
+          break;
+          
+        case 'apml_message':
+          if (data.to === 'user') {
+            // Route to web clients
+            broadcast({
+              type: 'apml_from_orch',
+              content: data.content,
+              timestamp: new Date().toISOString()
+            });
+          }
+          break;
       }
     } catch (error) {
       console.error('Message parsing error:', error);
+      ws.send(JSON.stringify({
+        type: 'error',
+        message: error.message,
+        timestamp: new Date().toISOString()
+      }));
     }
   });
   
@@ -186,11 +164,26 @@ wss.on('connection', (ws) => {
   });
 });
 
+// Broadcast to all clients
+function broadcast(message) {
+  const messageStr = JSON.stringify(message);
+  clients.forEach((client) => {
+    if (client.readyState === WebSocket.OPEN) {
+      client.send(messageStr);
+    }
+  });
+}
+
 // API endpoints
 app.get('/api/status', (req, res) => {
   res.json({
     status: 'online',
     connections: clients.size,
+    pendingRequests: pendingRequests.length,
+    vfs: {
+      ready: true,
+      persistence: true
+    },
     timestamp: new Date().toISOString()
   });
 });
@@ -242,19 +235,15 @@ app.get('/api/agents', (req, res) => {
   res.json({ agents: agentSpawner.getAllAgents() });
 });
 
-app.get('/api/agents/:id', (req, res) => {
-  const agent = agentSpawner.getAgent(req.params.id);
-  if (agent) {
-    res.json(agent);
-  } else {
-    res.status(404).json({ error: 'Agent not found' });
-  }
-});
-
 // VFS persistence endpoints
 app.post('/api/vfs/snapshot', async (req, res) => {
   const result = await vfsPersistence.saveSnapshot('manual');
   res.json(result);
+});
+
+app.get('/api/vfs/snapshots', (req, res) => {
+  const snapshots = vfsPersistence.listSnapshots();
+  res.json({ snapshots });
 });
 
 app.post('/api/vfs/export', async (req, res) => {
@@ -269,4 +258,9 @@ app.post('/api/vfs/export', async (req, res) => {
   } catch (error) {
     res.status(500).json({ error: error.message });
   }
+});
+
+// Health check
+app.get('/health', (req, res) => {
+  res.json({ status: 'healthy' });
 });
