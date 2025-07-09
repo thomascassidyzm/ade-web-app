@@ -30,7 +30,8 @@ let bridgeWs = null;
 
 // Connect to MCP bridge
 function connectToBridge() {
-  bridgeWs = new WebSocket('wss://ade-app.up.railway.app');
+  // Don't connect to external bridge - we ARE the bridge
+  // bridgeWs = new WebSocket('wss://ade-app.up.railway.app');
   
   bridgeWs.on('open', () => {
     console.log('Connected to MCP bridge');

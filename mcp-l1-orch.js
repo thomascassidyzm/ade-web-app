@@ -6,7 +6,7 @@
 
 const readline = require('readline');
 const WebSocket = require('ws');
-const http = require('http');
+const https = require('https');
 
 // Configuration
 const ADE_WS_URL = process.env.ADE_WS_URL || 'wss://ade-web-app-production.up.railway.app';
@@ -508,13 +508,13 @@ function handleToolCall(tool, args, id) {
       break;
       
     case 'read_vfs_file':
-      // Make HTTP request to read VFS file
+      // Make HTTPS request to read VFS file
       if (!args.path) {
         sendError(id, -32602, 'Missing required parameter: path');
         return;
       }
-      const readUrl = `${ADE_HTTP_URL}/api/vfs/${args.path}`;
-      http.get(readUrl, (res) => {
+      const readUrl = `${ADE_HTTP_URL}/api/vfs/read/${args.path}`;
+      https.get(readUrl, (res) => {
         let data = '';
         res.on('data', (chunk) => data += chunk);
         res.on('end', () => {
@@ -531,8 +531,8 @@ function handleToolCall(tool, args, id) {
       break;
       
     case 'list_vfs_files':
-      // Make HTTP request to list VFS files
-      http.get(`${ADE_HTTP_URL}/api/vfs`, (res) => {
+      // Make HTTPS request to list VFS files
+      https.get(`${ADE_HTTP_URL}/api/vfs/list`, (res) => {
         let data = '';
         res.on('data', (chunk) => data += chunk);
         res.on('end', () => {
