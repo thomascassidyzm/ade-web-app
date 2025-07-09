@@ -1,0 +1,8 @@
+{
+  "content": "---\ntype: agent\nname: DataProcessor\nversion: 1.0.0\n---\n\ncapabilities:\n  - name: ProcessData\n    input: JSON\n    output: ProcessedData\n",
+  "metadata": {
+    "type": "agent-spec",
+    "created": "2025-07-09T01:04:51.965Z",
+    "path": "agents/data-processor.apml"
+  }
+}

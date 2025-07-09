@@ -1,0 +1,8 @@
+{
+  "content": "---\ntype: component\nname: UIComponent\nframework: react\n---\n\nproperties:\n  theme: dark\n  responsive: true\n",
+  "metadata": {
+    "type": "component-spec",
+    "created": "2025-07-09T01:04:51.966Z",
+    "path": "components/ui-component.apml"
+  }
+}

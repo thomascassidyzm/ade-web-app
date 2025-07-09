@@ -1,0 +1,9 @@
+{
+  "content": "---\ntype: agent\nname: TestAgent\nversion: 1.0.0\n---\n\ncapabilities:\n  - name: TestCapability\n    description: A test capability for VFS testing\n    \nproperties:\n  test: true\n  timestamp: 2025-07-09T01:03:36.755Z\n",
+  "metadata": {
+    "type": "apml",
+    "format": "agent",
+    "created": "2025-07-09T01:03:36.759Z",
+    "path": "specs/test-agent.apml"
+  }
+}

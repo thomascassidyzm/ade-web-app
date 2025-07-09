@@ -4,10 +4,13 @@ const cors = require('cors');
 const path = require('path');
 const VirtualFileSystem = require('./vfs');
 const AgentSpawner = require('./agent-spawner');
+const ADEPhases = require('./ade-phases-guidance');
+const VFSPersistence = require('./vfs-persistence');
 
 const app = express();
 const PORT = process.env.PORT || 3001;
 const vfs = new VirtualFileSystem();
+const vfsPersistence = new VFSPersistence(vfs);
 const agentSpawner = new AgentSpawner(process.env.ANTHROPIC_API_KEY);
 
 app.use(cors());
@@ -44,6 +47,11 @@ function connectToBridge() {
       if (msg.type === 'vfs_write') {
         const result = await vfs.write(msg.content.path, msg.content.content, msg.content.metadata);
         console.log('VFS Write:', result);
+        
+        // Save snapshot on important writes
+        if (msg.content.path.includes('/specs/') || msg.content.path.includes('/components/')) {
+          await vfsPersistence.saveOnEvent('important_write');
+        }
       }
       
       if (msg.type === 'create_worker') {
@@ -62,6 +70,42 @@ function connectToBridge() {
       
       if (msg.type === 'agent_connect' && msg.agentId === 'L1_ORCH') {
         console.log('L1_ORCH connected');
+        
+        // Send updated phase guidance to L1_ORCH
+        bridgeWs.send(JSON.stringify({
+          type: 'apml',
+          content: `---
+apml: 1.0
+type: phase_guidance_v2
+from: ADE_SYSTEM
+to: L1_ORCH
+timestamp: ${new Date().toISOString()}
+---
+content:
+  version: 2.0.0
+  message: "Updated ADE Phase Guidance - Reflecting our improved understanding"
+  phases: ${JSON.stringify(ADEPhases.phases, null, 2)}
+  key_principles: ${JSON.stringify(ADEPhases.key_principles, null, 2)}
+  time_compression: ${JSON.stringify(ADEPhases.time_compression, null, 2)}
+  instruction: "Use this updated guidance for the complete ADE flow: SPECIFY → VISUALIZE → BUILD → EYE-TEST → DEPLOY"`
+        }));
+        
+        // Also send existing libraries
+        bridgeWs.send(JSON.stringify({
+          type: 'apml',
+          content: `---
+apml: 1.0
+type: library_reminder
+from: ADE_SYSTEM
+to: L1_ORCH
+---
+content:
+  message: "Remember: You have access to the complete APML component library and advanced capabilities"
+  components: ["auth", "navigation", "data_patterns", "ui_patterns", "business_features"]
+  capabilities: ["voice", "ai", "payments", "realtime", "location", "analytics", "media"]
+  use_existing: "Always use existing components/capabilities instead of creating from scratch"`
+        }));
+        
         // Notify all web clients
         clients.forEach((client) => {
           if (client.readyState === WebSocket.OPEN) {
@@ -197,5 +241,25 @@ app.get('/api/agents/:id', (req, res) => {
     res.json(agent);
   } else {
     res.status(404).json({ error: 'Agent not found' });
+  }
+});
+
+// VFS persistence endpoints
+app.post('/api/vfs/snapshot', async (req, res) => {
+  const result = await vfsPersistence.saveSnapshot('manual');
+  res.json(result);
+});
+
+app.post('/api/vfs/export', async (req, res) => {
+  const { projectName } = req.body;
+  if (!projectName) {
+    return res.status(400).json({ error: 'Project name required' });
+  }
+  
+  try {
+    const exportPath = await vfsPersistence.exportForDeployment(projectName);
+    res.json({ success: true, path: exportPath });
+  } catch (error) {
+    res.status(500).json({ error: error.message });
   }
 });

@@ -1,0 +1,8 @@
+{
+  "content": "---\ntype: project\nname: TestProject\ncreated: 2025-07-09T01:04:51.962Z\n---\n\nagents:\n  - DataProcessor\n  - TestAgent\n  \ncomponents:\n  - UIComponent\n",
+  "metadata": {
+    "type": "project-spec",
+    "created": "2025-07-09T01:04:51.966Z",
+    "path": "projects/test-project.apml"
+  }
+}

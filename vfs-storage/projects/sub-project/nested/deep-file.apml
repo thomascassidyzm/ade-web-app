@@ -1,0 +1,8 @@
+{
+  "content": "Nested content test",
+  "metadata": {
+    "nested": true,
+    "created": "2025-07-09T01:04:51.967Z",
+    "path": "projects/sub-project/nested/deep-file.apml"
+  }
+}
