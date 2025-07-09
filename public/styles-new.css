@@ -1,4 +1,4 @@
-/* Modern, clean design system */
+/* ADE - Beautiful, user-friendly interface */
 :root {
   --primary: #6366f1;
   --primary-dark: #4f46e5;
@@ -324,7 +324,7 @@ body {
   text-align: right;
 }
 
-.chat-message.orch {
+.chat-message.ade {
   background: white;
   border: 2px solid var(--secondary);
   margin-right: 20%;
