@@ -670,6 +670,28 @@ async function handleToolCall(tool, args, id) {
         });
         break;
         
+      case 'generate_api':
+        const apiCode = generateAPIEndpoint(args.method, args.path, args.handler);
+        // Save to VFS
+        const apiPath = `/api/${args.path.replace(/\//g, '_')}.js`;
+        if (ws && isConnected) {
+          ws.send(JSON.stringify({
+            type: 'vfs_write',
+            content: {
+              path: apiPath,
+              content: apiCode,
+              metadata: { generator: 'L1_ORCH' }
+            }
+          }));
+        }
+        sendResponse(id, {
+          content: [{
+            type: 'text',
+            text: apiCode
+          }]
+        });
+        break;
+        
       // === STATUS ===
       case 'get_status':
         const status = {
@@ -723,6 +745,21 @@ ${propsSection}
   /* Component styles */
 }
 </style>`;
+}
+
+function generateAPIEndpoint(method, path, handler) {
+  return `// ${method} ${path}
+module.exports = async (req, res) => {
+  try {
+    ${handler || '// Add your handler logic here\n    const result = {};\n    res.json(result);'}
+  } catch (error) {
+    console.error('API Error:', error);
+    res.status(500).json({ 
+      error: 'Internal server error',
+      message: error.message 
+    });
+  }
+};`;
 }
 
 // MCP protocol handlers
