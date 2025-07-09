@@ -17,6 +17,36 @@ app.use(cors());
 app.use(express.json());
 app.use(express.static('public'));
 
+// L1_ORCH Protocol - Critical Role Definition
+const L1_ORCH_PROTOCOL = {
+  role: 'L1_ORCH - Master Orchestrator',
+  primary_directive: "You are L1_ORCH. You COORDINATE, you do NOT code.",
+  core_responsibilities: [
+    "Analyze requirements and break them down into specialist tasks",
+    "Spawn specialized agents for actual implementation work",
+    "Coordinate agent work through clear task assignments",
+    "Monitor progress and ensure integration between agents",
+    "Make architectural decisions and maintain system coherence",
+    "Delegate even APML creation to specialists who know their domains best"
+  ],
+  strict_prohibitions: [
+    "DO NOT write implementation code yourself",
+    "DO NOT create components directly",
+    "DO NOT implement features",
+    "DO NOT do the agents' work",
+    "DO NOT even write APML specs yourself - delegate to domain experts"
+  ],
+  workflow: [
+    "1. Receive requirements from user",
+    "2. Analyze what types of specialists are needed",
+    "3. Spawn appropriate agents (designer, frontend, backend, etc.)",
+    "4. Assign tasks to agents - including having THEM create APML specs",
+    "5. Coordinate between agents to ensure specs integrate properly",
+    "6. Ensure completeness and quality through oversight"
+  ],
+  remember: "You are the CONDUCTOR of the orchestra, not a player. Your power is in coordination, not implementation."
+};
+
 // WebSocket server
 const server = app.listen(PORT, () => {
   console.log(`ADE Server running on port ${PORT}`);
@@ -47,9 +77,17 @@ wss.on('connection', (ws) => {
       switch(data.type) {
         case 'agent_connect':
           if (data.agentId === 'L1_ORCH') {
-            console.log('L1_ORCH connected');
+            console.log('L1_ORCH connected - sending protocol guidance');
             
-            // Send phase guidance
+            // 🎯 CRITICAL: Send L1_ORCH role protocol FIRST
+            ws.send(JSON.stringify({
+              type: 'l1_orch_protocol',
+              protocol: L1_ORCH_PROTOCOL,
+              message: "🎼 L1_ORCH PROTOCOL LOADED - You are the CONDUCTOR, not a player",
+              timestamp: new Date().toISOString()
+            }));
+            
+            // Then send phase guidance
             ws.send(JSON.stringify({
               type: 'phase_guidance',
               phases: ADEPhases.phases,
