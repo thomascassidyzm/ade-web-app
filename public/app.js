@@ -16,11 +16,14 @@ class ADEApp {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const wsUrl = `${protocol}//${window.location.host}`;
     
+    this.updateConnectionStatus('connecting');
+    
     this.ws = new WebSocket(wsUrl);
     
     this.ws.onopen = () => {
       this.connected = true;
       console.log('Connected to ADE server');
+      this.updateConnectionStatus('connected');
     };
     
     this.ws.onmessage = (event) => {
@@ -34,7 +37,13 @@ class ADEApp {
     
     this.ws.onclose = () => {
       this.connected = false;
+      this.updateConnectionStatus('disconnected');
       setTimeout(() => this.connectWebSocket(), 3000);
+    };
+    
+    this.ws.onerror = (error) => {
+      console.error('WebSocket error:', error);
+      this.updateConnectionStatus('error');
     };
   }
 
