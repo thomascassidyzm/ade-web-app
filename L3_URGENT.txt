@@ -1,0 +1,26 @@
+L3 WORKERS - URGENT PRIORITY CHANGE
+
+IGNORE previous instructions about waiting for L2_COORDINATOR.
+
+IMMEDIATE ACTION:
+```bash
+cd /Users/tomcassidy/claude-code-experiments/APML-Projects/ADE/ade-web-app
+./claim-task.sh frontend
+```
+
+You'll get TASK_52: Build APML-to-Vue Compiler Core
+
+START IMMEDIATELY:
+1. Create /compiler/vue/ directory
+2. Build basic APML parser
+3. Generate Vue templates
+4. Get SOMETHING working fast
+
+We need a working compiler prototype NOW. Don't wait for perfect specs.
+
+Basic compiler structure:
+- Input: APML component spec
+- Output: Vue 3 SFC (.vue file)
+- Start simple: just handle component name, template, props
+
+GO!

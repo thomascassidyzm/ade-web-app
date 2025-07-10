@@ -1,0 +1,28 @@
+apml_version: 1.0
+metadata:
+  title: AGENT STARTUP - SIMPLIFIED STACK
+  version: 2.0
+
+roles:
+  L1_ORCH:
+    command: Create prioritized tasks from user requests
+    
+  L2_SPEC_WRITER:
+    command: ./claim-task.sh worker
+    actions: Draft APML specs, handle CRs
+    
+  L2_APML_MASTER: 
+    command: Review draft specs in /specs/drafts/
+    actions: Approve to /specs/approved/ or reject with feedback
+    
+  L3_WORKER:
+    command: ./claim-task.sh worker
+    actions: Implement approved specs only
+
+current_priority:
+  1: vue-compiler.apml (draft needed)
+  2: Clean CSS conflicts
+  3: Delete old visualize code
+
+simple_flow:
+  User → L1 (task) → L2_SPEC (draft) → L2_MASTER (review) → L3 (build)

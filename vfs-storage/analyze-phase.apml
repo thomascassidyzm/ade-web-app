@@ -1,0 +1,255 @@
+apml_version: 1.0
+metadata:
+  title: "ANALYZE Phase Specification"
+  author: "L2_APML_MASTER"
+  authority: "sole_apml_writer"
+  parent_spec: "master-app.apml"
+  phase: "analyze"
+  created: "2025-07-09T14:50:00Z"
+  
+phase_definition:
+  id: "analyze"
+  name: "Analyze"
+  icon: "🔍"
+  description: "Data analysis and research phase"
+  primary_color: "#00ffff"
+  
+  purpose: "Collect, process, and analyze user data to inform design decisions"
+  
+  workflow:
+    - step: "data_collection"
+      title: "Data Collection"
+      description: "Gather user requirements, feedback, and research"
+      
+    - step: "data_processing"
+      title: "Data Processing"
+      description: "Clean, organize, and structure collected data"
+      
+    - step: "insight_generation"
+      title: "Insight Generation"
+      description: "Analyze patterns and generate actionable insights"
+      
+    - step: "requirement_definition"
+      title: "Requirement Definition"
+      description: "Define clear requirements for design phase"
+
+component_architecture:
+  main_component: "AnalyzePanel"
+  layout: "single_panel_mobile"
+  
+  components:
+    analyze_panel:
+      type: "container"
+      file: "AnalyzePanel.vue"
+      responsibility: "Main analyze phase container"
+      
+      sections:
+        header:
+          component: "AnalyzeHeader"
+          props:
+            title: "Analyze Phase"
+            icon: "🔍"
+            phase_progress: "number"
+            
+        content:
+          component: "AnalyzeContent"
+          layout: "vertical_scroll"
+          
+          subsections:
+            data_input:
+              component: "DataInputSection"
+              props:
+                input_types: ["text", "file", "url", "api"]
+                validation: "required"
+                
+            data_visualization:
+              component: "DataVisualizationSection"
+              props:
+                chart_types: ["bar", "line", "pie", "scatter"]
+                
+            insights_panel:
+              component: "InsightsPanel"
+              props:
+                insight_types: ["pattern", "trend", "anomaly", "recommendation"]
+                
+            requirements_output:
+              component: "RequirementsOutput"
+              props:
+                format: "structured"
+                export_enabled: true
+                
+        footer:
+          component: "AnalyzeFooter"
+          props:
+            actions: ["save", "export", "continue_to_design"]
+
+data_structures:
+  analyze_state:
+    current_step: "data_collection"
+    input_data: 
+      type: "object"
+      properties:
+        raw_data: "string"
+        data_source: "string"
+        timestamp: "string"
+        
+    processed_data:
+      type: "array"
+      items:
+        data_point: "object"
+        category: "string"
+        confidence: "number"
+        
+    insights:
+      type: "array"
+      items:
+        insight_id: "string"
+        type: "string"
+        description: "string"
+        impact: "string"
+        confidence: "number"
+        
+    requirements:
+      type: "array"
+      items:
+        requirement_id: "string"
+        priority: "string"
+        description: "string"
+        acceptance_criteria: "array"
+
+interactions:
+  data_input:
+    type: "multi_modal"
+    methods:
+      - text_input:
+          placeholder: "Enter your requirements..."
+          validation: "min_length_10"
+          
+      - file_upload:
+          accepted_types: [".txt", ".csv", ".json"]
+          max_size: "5MB"
+          
+      - url_import:
+          validation: "valid_url"
+          
+      - api_connection:
+          auth_required: true
+          
+  data_processing:
+    type: "automated"
+    triggers:
+      - "data_input_complete"
+      - "manual_process_trigger"
+      
+    processing_steps:
+      - "data_cleaning"
+      - "pattern_recognition"
+      - "sentiment_analysis"
+      - "categorization"
+      
+  insight_generation:
+    type: "ai_assisted"
+    algorithms:
+      - "pattern_detection"
+      - "trend_analysis"
+      - "anomaly_detection"
+      - "recommendation_engine"
+      
+  navigation:
+    next_phase: "design"
+    conditions:
+      - "requirements_defined"
+      - "insights_generated"
+      - "data_quality_validated"
+
+mobile_layout:
+  orientation: "portrait"
+  scroll_behavior: "vertical"
+  
+  sections:
+    header:
+      height: "80px"
+      position: "fixed_top"
+      background: "#141414"
+      
+    content:
+      margin_top: "80px"
+      margin_bottom: "100px"
+      padding: "20px"
+      
+    footer:
+      height: "100px"
+      position: "fixed_bottom"
+      background: "#141414"
+
+responsive_breakpoints:
+  mobile:
+    max_width: "767px"
+    layout: "single_column"
+    
+  tablet:
+    min_width: "768px"
+    max_width: "1023px"
+    layout: "two_column"
+    
+  desktop:
+    min_width: "1024px"
+    layout: "three_column"
+
+data_flow:
+  input_to_processing:
+    trigger: "data_input_complete"
+    validation: "data_quality_check"
+    
+  processing_to_insights:
+    trigger: "processing_complete"
+    transformation: "structured_analysis"
+    
+  insights_to_requirements:
+    trigger: "insights_validated"
+    mapping: "insight_to_requirement"
+    
+  requirements_to_design:
+    trigger: "phase_complete"
+    output: "design_brief"
+
+validation_rules:
+  data_input:
+    - rule: "not_empty"
+      message: "Please provide input data"
+      
+    - rule: "valid_format"
+      message: "Data format not supported"
+      
+  insights:
+    - rule: "minimum_three_insights"
+      message: "Generate at least 3 insights"
+      
+  requirements:
+    - rule: "actionable_requirements"
+      message: "Requirements must be actionable"
+      
+    - rule: "prioritized_requirements"
+      message: "Requirements must be prioritized"
+
+performance_requirements:
+  data_processing: "< 5 seconds"
+  insight_generation: "< 10 seconds"
+  page_load: "< 2 seconds"
+  
+accessibility:
+  keyboard_navigation: true
+  screen_reader_support: true
+  high_contrast_mode: true
+  
+security:
+  data_encryption: "AES-256"
+  input_sanitization: true
+  session_management: true
+
+implementation_notes:
+  - ALL components must implement this specification exactly
+  - Data processing must be efficient and scalable
+  - Insights must be actionable and relevant
+  - Mobile-first design is mandatory
+  - NO modifications without L2_APML_MASTER approval

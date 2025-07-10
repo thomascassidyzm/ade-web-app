@@ -1,0 +1,17 @@
+AGENT QUICK START - READ FIRST
+
+1. Check coordination status:
+   cat /specs/coordination.apml
+
+2. Check master spec:
+   cat /specs/master.apml
+
+3. Claim task:
+   ./claim-task.sh worker
+
+4. Write spec proposals to:
+   /specs/proposals/{feature}_v{version}.apml
+
+5. APML_MASTER reviews and merges to master.apml
+
+CRITICAL NOW: Someone claim TASK_57 to write vue_compiler spec!

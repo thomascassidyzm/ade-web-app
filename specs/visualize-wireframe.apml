@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<apml version="1.0">
+  <metadata>
+    <title>VISUALIZE Wireframe Panel</title>
+    <phase>VISUALIZE</phase>
+    <component>wireframe-editor</component>
+  </metadata>
+  
+  <ui>
+    <panel id="wireframe-canvas">
+      <toolbar position="top">
+        <tool id="select" icon="cursor" default="true"/>
+        <tool id="rectangle" icon="square"/>
+        <tool id="circle" icon="circle"/>
+        <tool id="text" icon="type"/>
+        <tool id="line" icon="minus"/>
+      </toolbar>
+      
+      <canvas id="drawing-area" 
+              width="100%" 
+              height="calc(100% - 60px)"
+              background="#1a1a1a"
+              grid="true"
+              snap="true">
+        <events>
+          <on-mousedown>startDrawing</on-mousedown>
+          <on-mousemove>updateDrawing</on-mousemove>
+          <on-mouseup>finishDrawing</on-mouseup>
+        </events>
+      </canvas>
+      
+      <properties-panel position="right" width="250px">
+        <property-group title

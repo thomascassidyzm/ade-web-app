@@ -1,0 +1,132 @@
+apml_version: 1.0
+metadata:
+  title: "ADE System Rules - Current Operating Framework"
+  author: "L2_COORDINATOR"
+  authority: "coordination_and_qa"
+  created: "2025-07-09T17:44:00Z"
+  status: "ACTIVE"
+
+system_state:
+  vue_compiler: "NOT_READY"
+  manual_coding: "PROHIBITED"
+  workflow: "APML → Compiler → Implementation (when ready)"
+  worker_type: "generic_l3_only"
+  qa_requirement: "mandatory_review"
+
+current_constraints:
+  blocked_actions:
+    - "Manual Vue component coding"
+    - "Direct JavaScript implementation"
+    - "Component integration without compiler"
+    - "Specialized worker roles"
+    
+  prohibited_tasks:
+    - "L3: Implement Vue components"
+    - "Component integration"
+    - "Manual code generation"
+    - "Specialized frontend work"
+
+valid_l3_tasks:
+  immediate_actions:
+    - task_type: "cleanup"
+      description: "Clean CSS conflicts"
+      requirements: "Consolidate conflicting styles"
+      
+    - task_type: "deletion"
+      description: "Delete old visualize code"
+      requirements: "Remove obsolete components"
+      
+    - task_type: "organization"
+      description: "File organization"
+      requirements: "Structure project files"
+      
+    - task_type: "validation"
+      description: "APML validation"
+      requirements: "Verify specification compliance"
+      
+    - task_type: "documentation"
+      description: "Documentation tasks"
+      requirements: "Update project documentation"
+
+workflow_enforcement:
+  task_creation:
+    - "All tasks must trace to APML spec"
+    - "Size tasks appropriately (2-4 hours)"
+    - "Include clear success criteria"
+    - "Specify required tools"
+    
+  quality_assurance:
+    - "L2_COORDINATOR reviews ALL L3 work"
+    - "Verify APML compliance before completion"
+    - "Return non-compliant work with feedback"
+    - "No work reaches production without QA"
+    
+  worker_management:
+    - "Generic L3 workers only"
+    - "No specialization allowed"
+    - "All workers follow same brief"
+    - "Coordinate through L2_COORDINATOR"
+
+compiler_readiness:
+  vue_compiler:
+    status: "NOT_READY"
+    waiting_for: "Technical implementation"
+    impact: "Vue tasks blocked"
+    
+  when_ready:
+    - "APML specs will compile to Vue components"
+    - "L3 workers will run compiler, not write code"
+    - "Integration tasks will become available"
+    - "Manual coding remains prohibited"
+
+escalation_procedures:
+  l3_to_l2:
+    - "Task clarification needed"
+    - "APML spec conflicts"
+    - "Tool availability issues"
+    - "QA feedback disputes"
+    
+  l2_to_l1:
+    - "Strategic direction needed"
+    - "Resource allocation decisions"
+    - "Priority conflicts"
+    - "System-wide issues"
+
+success_metrics:
+  - "Zero non-compliant code in production"
+  - "All tasks have clear APML lineage"
+  - "L3 workers always know current rules"
+  - "Smooth task flow without L1 intervention"
+  - "Quality maintained during compiler transition"
+
+communication_protocols:
+  daily_standup:
+    - "L3 workers report progress"
+    - "L2_COORDINATOR updates system status"
+    - "Blocked tasks identified"
+    - "Rule changes communicated"
+    
+  task_handoff:
+    - "Clear specifications required"
+    - "Success criteria defined"
+    - "Dependencies documented"
+    - "QA checkpoints established"
+
+enforcement_authority:
+  l2_coordinator:
+    - "Create and assign L3 tasks"
+    - "Review and approve all L3 work"
+    - "Maintain system-rules.apml"
+    - "Brief workers on changes"
+    - "Coordinate with L2_APML_MASTER"
+    
+  consequences:
+    - "Non-compliant work returned"
+    - "Rule violations documented"
+    - "Repeat offenses escalated"
+    - "System integrity maintained"
+
+current_priority:
+  immediate: "Organize existing work within current constraints"
+  short_term: "Prepare for compiler readiness"
+  long_term: "Establish efficient APML → Implementation pipeline"

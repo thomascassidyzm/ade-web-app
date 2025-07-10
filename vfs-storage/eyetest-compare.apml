@@ -1,0 +1,318 @@
+apml_version: 1.0
+metadata:
+  title: "EyeTestCompare Component Specification"
+  author: "L2_APML_MASTER"
+  authority: "sole_apml_writer"
+  parent_spec: "master-app.apml"
+  phase: "eyetest"
+  created: "2025-07-09T14:52:00Z"
+  
+component_definition:
+  name: "EyeTestCompare"
+  type: "comparison_interface"
+  file: "EyeTestCompare.vue"
+  purpose: "A/B testing and visual comparison interface"
+  
+  design_principles:
+    - "Clear visual separation of variants"
+    - "Intuitive comparison modes"
+    - "Quantitative metrics display"
+    - "Mobile-optimized interaction"
+
+layout_structure:
+  container:
+    class: "eye-test-compare"
+    background: "#0a0a0a"
+    
+    sections:
+      header:
+        class: "compare-header"
+        height: "60px"
+        background: "#141414"
+        
+        elements:
+          title:
+            text: "Eye Test A/B Comparison"
+            color: "#ffffff"
+            font_size: "18px"
+            
+          controls:
+            class: "compare-controls"
+            
+            view_mode_toggle:
+              buttons:
+                - mode: "side-by-side"
+                  label: "Side by Side"
+                  default: true
+                  
+                - mode: "overlay"
+                  label: "Overlay"
+                  
+                - mode: "diff"
+                  label: "Difference"
+                  
+      content:
+        class: "comparison-container"
+        flex: 1
+        
+        modes:
+          side_by_side:
+            layout: "two_column"
+            
+            panels:
+              panel_a:
+                class: "compare-panel panel-a"
+                width: "50%"
+                border_right: "1px solid #2a2a2a"
+                
+                elements:
+                  label:
+                    text: "Version A"
+                    position: "top"
+                    color: "#00ffff"
+                    
+                  content:
+                    slot: "version-a"
+                    placeholder: "🅰️ Version A Content"
+                    
+                  metrics:
+                    class: "panel-metrics"
+                    position: "bottom"
+                    
+                    data:
+                      - metric: "performance"
+                        label: "Performance"
+                        format: "percentage"
+                        
+                      - metric: "engagement"
+                        label: "Engagement"
+                        format: "percentage"
+                        
+                      - metric: "conversion"
+                        label: "Conversion"
+                        format: "percentage"
+                        
+              divider:
+                class: "compare-divider"
+                width: "4px"
+                draggable: true
+                
+              panel_b:
+                class: "compare-panel panel-b"
+                width: "50%"
+                
+                elements:
+                  label:
+                    text: "Version B"
+                    position: "top"
+                    color: "#ff00ff"
+                    
+                  content:
+                    slot: "version-b"
+                    placeholder: "🅱️ Version B Content"
+                    
+                  metrics:
+                    class: "panel-metrics"
+                    position: "bottom"
+                    comparison: true
+                    
+          overlay:
+            layout: "single_container"
+            
+            controls:
+              opacity_slider:
+                range: "0-100"
+                default: 50
+                
+              layer_toggle:
+                options: ["A on top", "B on top"]
+                
+          diff:
+            layout: "single_container"
+            
+            visualization:
+              type: "difference_map"
+              highlight_color: "#ff0000"
+              
+            legend:
+              added: "#00ff00"
+              removed: "#ff0000"
+              modified: "#ffff00"
+
+data_structure:
+  state:
+    view_mode: "side-by-side"
+    
+    variant_a:
+      content: "object"
+      metrics:
+        performance: "number"
+        engagement: "number"
+        conversion: "number"
+        
+    variant_b:
+      content: "object"
+      metrics:
+        performance: "number"
+        engagement: "number"
+        conversion: "number"
+        
+    comparison_results:
+      winner: "string"
+      confidence: "number"
+      recommendations: "array"
+      
+  props:
+    - name: "variant_a_data"
+      type: "object"
+      required: true
+      
+    - name: "variant_b_data"
+      type: "object"
+      required: true
+      
+    - name: "metrics_config"
+      type: "object"
+      default: "default_metrics"
+      
+    - name: "comparison_mode"
+      type: "string"
+      default: "side-by-side"
+      
+  emits:
+    - "mode-changed"
+    - "variant-selected"
+    - "comparison-complete"
+    - "metrics-updated"
+
+interactions:
+  mode_switching:
+    type: "button_toggle"
+    animation: "fade_transition"
+    duration: "300ms"
+    
+  panel_resizing:
+    type: "drag"
+    target: "divider"
+    constraints:
+      min_width: "20%"
+      max_width: "80%"
+      
+  variant_selection:
+    type: "click"
+    target: "panel_content"
+    effect: "highlight_border"
+    
+  metrics_interaction:
+    type: "hover"
+    effect: "tooltip"
+    
+  overlay_control:
+    type: "slider"
+    real_time: true
+    
+  diff_analysis:
+    type: "automated"
+    trigger: "mode_change_to_diff"
+
+mobile_optimizations:
+  responsive_layout:
+    mobile:
+      breakpoint: "< 768px"
+      layout: "stacked_vertical"
+      
+      modifications:
+        - "side_by_side becomes vertical_stack"
+        - "overlay mode remains unchanged"
+        - "diff mode shows simplified view"
+        
+    tablet:
+      breakpoint: "768px - 1024px"
+      layout: "side_by_side_compressed"
+      
+  touch_interactions:
+    swipe_between_modes:
+      enabled: true
+      direction: "horizontal"
+      
+    pinch_zoom:
+      enabled: true
+      target: "content_areas"
+      
+    tap_to_select:
+      enabled: true
+      feedback: "haptic"
+
+performance_requirements:
+  mode_switching: "< 300ms"
+  metrics_calculation: "< 1s"
+  diff_analysis: "< 2s"
+  
+  memory_usage:
+    max_variants: 2
+    image_compression: true
+    lazy_loading: true
+
+accessibility:
+  keyboard_navigation:
+    tab_order: ["mode_buttons", "panel_a", "panel_b", "metrics"]
+    
+  screen_reader:
+    labels: "descriptive"
+    announcements: "mode_changes"
+    
+  high_contrast:
+    mode: "enhanced_borders"
+    colors: "wcag_compliant"
+
+validation_rules:
+  variant_data:
+    - rule: "both_variants_required"
+      message: "Both variants must be provided"
+      
+    - rule: "compatible_formats"
+      message: "Variants must have compatible formats"
+      
+  metrics:
+    - rule: "valid_percentage"
+      message: "Metrics must be valid percentages"
+      
+    - rule: "comparable_data"
+      message: "Metrics must be comparable"
+
+integration_points:
+  parent_component: "EyeTestPanel"
+  data_source: "test_results_api"
+  
+  required_services:
+    - "metrics_calculator"
+    - "diff_analyzer"
+    - "comparison_engine"
+    
+  external_dependencies:
+    - "chart_library"
+    - "image_processing"
+    - "analytics_tracker"
+
+testing_requirements:
+  unit_tests:
+    - "mode_switching"
+    - "metrics_calculation"
+    - "responsive_layout"
+    
+  integration_tests:
+    - "data_flow"
+    - "parent_communication"
+    - "service_integration"
+    
+  e2e_tests:
+    - "user_workflows"
+    - "performance_benchmarks"
+    - "accessibility_compliance"
+
+implementation_constraints:
+  - Component MUST handle null/undefined variants gracefully
+  - All animations must be performant on mobile
+  - Metrics calculation must be real-time
+  - Diff analysis must be accurate
+  - NO modifications without L2_APML_MASTER approval

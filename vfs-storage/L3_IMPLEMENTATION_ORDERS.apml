@@ -1,0 +1,173 @@
+apml_version: 1.0
+metadata:
+  title: "L3 Worker Implementation Orders"
+  author: "L2_APML_MASTER"
+  authority: "DIRECTIVE"
+  issued: "2025-07-09T14:45:00Z"
+  
+MANDATORY_COMPLIANCE:
+  - ALL L3 workers MUST implement exactly as specified
+  - NO deviations allowed
+  - NO APML modifications by L3 workers
+  - Report completion to L2_APML_MASTER only
+
+IMPLEMENTATION_QUEUE:
+  
+  ORDER_1:
+    priority: "URGENT"
+    worker_type: "frontend"
+    task: "Replace VisualizePanel.vue"
+    
+    requirements:
+      - Delete current VisualizePanel.vue
+      - Implement according to master-app.apml
+      - Follow visualize-layout.apml specification
+      - Mobile-first responsive design
+      - Bottom tab navigation ONLY
+      
+    specification_files:
+      - "master-app.apml"
+      - "visualize-layout.apml"
+      
+    acceptance_criteria:
+      - Single panel mobile layout
+      - Bottom tab navigation functional
+      - Responsive behavior implemented
+      - Data synchronization working
+      
+  ORDER_2:
+    priority: "HIGH"
+    worker_type: "frontend"
+    task: "Refactor VisualizeWireframe.vue"
+    
+    requirements:
+      - Implement wireframe_panel specification
+      - Canvas size: 300x400
+      - Tools: rectangle, circle, text, line
+      - Grid and snap-to-grid functionality
+      - Save/Clear/Export buttons
+      
+    specification_files:
+      - "visualize-layout.apml"
+      
+    acceptance_criteria:
+      - Matches wireframe_panel spec exactly
+      - All tools functional
+      - Grid system working
+      - Footer buttons operational
+      
+  ORDER_3:
+    priority: "HIGH"
+    worker_type: "frontend"
+    task: "Refactor VisualizeFlow.vue"
+    
+    requirements:
+      - Implement flow_panel specification
+      - Node types: start, process, decision, end
+      - Bezier connection style
+      - Auto-layout functionality
+      - Add node/layout/validate buttons
+      
+    specification_files:
+      - "visualize-layout.apml"
+      
+    acceptance_criteria:
+      - Matches flow_panel spec exactly
+      - All node types available
+      - Connections working
+      - Auto-layout functional
+      
+  ORDER_4:
+    priority: "HIGH"
+    worker_type: "frontend"
+    task: "Refactor VisualizeJourney.vue"
+    
+    requirements:
+      - Implement journey_panel specification
+      - Vertical timeline orientation
+      - Touchpoint system
+      - Emotion tracking
+      - Timeline controls
+      
+    specification_files:
+      - "visualize-layout.apml"
+      
+    acceptance_criteria:
+      - Matches journey_panel spec exactly
+      - Timeline functional
+      - Touchpoints working
+      - Emotion tracking active
+      
+  ORDER_5:
+    priority: "MEDIUM"
+    worker_type: "backend"
+    task: "Implement data synchronization"
+    
+    requirements:
+      - Wireframe to flow sync
+      - Flow to journey sync  
+      - Journey to wireframe sync
+      - Event-driven architecture
+      
+    specification_files:
+      - "visualize-layout.apml"
+      
+    acceptance_criteria:
+      - All sync triggers working
+      - Data flows correctly
+      - Events firing properly
+      
+  ORDER_6:
+    priority: "MEDIUM"
+    worker_type: "integration"
+    task: "Mobile navigation implementation"
+    
+    requirements:
+      - Bottom tab navigation
+      - Phase switching
+      - Animation transitions
+      - Responsive behavior
+      
+    specification_files:
+      - "master-app.apml"
+      
+    acceptance_criteria:
+      - Navigation fully functional
+      - Smooth transitions
+      - Mobile-optimized
+      
+FORBIDDEN_ACTIONS:
+  - Modifying ANY .apml files
+  - Creating new .apml files
+  - Changing specifications
+  - Implementing features not specified
+  - Deviating from mobile-first design
+  
+REPORTING_REQUIREMENTS:
+  - Report start of implementation
+  - Report completion with evidence
+  - Report any blockers immediately
+  - NO decisions without L2_APML_MASTER approval
+  
+QUALITY_GATES:
+  - ALL implementations must pass APML compliance check
+  - Mobile responsive testing mandatory
+  - Data synchronization validation required
+  - Performance benchmarks must be met
+  
+ESCALATION_PROTOCOL:
+  - Technical issues → L2_APML_MASTER
+  - Specification conflicts → L2_APML_MASTER
+  - Resource constraints → L2_APML_MASTER
+  - ANY questions → L2_APML_MASTER
+  
+TIMELINE:
+  - ORDER_1: Complete within 2 hours
+  - ORDER_2-4: Complete within 4 hours
+  - ORDER_5-6: Complete within 6 hours
+  - Daily progress reports required
+  
+AUTHORITY_REMINDER:
+  This is a DIRECTIVE from L2_APML_MASTER
+  Non-compliance will result in task reassignment
+  L2_APML_MASTER has SOLE authority over APML specifications

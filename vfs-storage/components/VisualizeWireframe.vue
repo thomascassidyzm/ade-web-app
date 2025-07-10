@@ -1,0 +1,1 @@
+[Previous Vue component content - full component code]

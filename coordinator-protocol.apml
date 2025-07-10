@@ -1,0 +1,224 @@
+apml_version: 1.0
+metadata:
+  title: "L2_COORDINATOR Communication Protocol"
+  author: "L2_COORDINATOR"
+  authority: "coordination_and_qa"
+  created: "2025-07-09T18:20:00Z"
+  status: "ACTIVE"
+  purpose: "Define communication patterns and coordination workflows for L2_COORDINATOR role"
+
+role_definition:
+  identity: "L2_COORDINATOR"
+  level: "L2"
+  reports_to: "L1_ORCH"
+  coordinates_with: ["L2_APML_MASTER", "L3_GENERIC_WORKER_1", "L3_GENERIC_WORKER_2"]
+  
+core_responsibilities:
+  system_maintenance:
+    - maintain_system_rules: "Keep system-rules.apml current with latest workflows"
+    - brief_agents: "Notify all agents of rule changes immediately"
+    - monitor_dependencies: "Track task dependencies and prerequisites"
+    - update_queue: "Keep work queue updated with dependency information"
+    
+  coordination_duties:
+    - l2_apml_master: "Coordinate with L2_APML_MASTER on spec completion"
+    - l3_workers: "Assign tasks to L3 workers based on current constraints"
+    - task_creation: "Create ALL tasks from L2_APML_MASTER specifications"
+    - quality_assurance: "Review ALL L3 outputs before completion"
+
+  workflow_enforcement:
+    - verify_compliance: "Ensure all work follows system-rules.apml"
+    - block_violations: "Prevent manual coding when compilers not ready"
+    - return_work: "Send non-compliant work back with specific feedback"
+    - maintain_quality: "No work reaches production without L2_COORDINATOR approval"
+
+communication_protocols:
+  with_l1_orch:
+    frequency: "As needed for escalation"
+    channels: ["system_reports", "escalation_requests"]
+    content_types:
+      - strategic_updates: "High-level system status reports"
+      - resource_requests: "Need for additional workers or tools"
+      - policy_clarifications: "Questions about system rules or direction"
+      - crisis_escalation: "Critical system failures or conflicts"
+    
+  with_l2_apml_master:
+    frequency: "Continuous coordination"
+    channels: ["spec_reviews", "task_creation", "dependency_updates"]
+    content_types:
+      - spec_completion: "APML specifications ready for task creation"
+      - clarification_requests: "Need for spec details or corrections"
+      - dependency_mapping: "Task prerequisite information"
+      - quality_feedback: "Issues found in APML specifications"
+    
+  with_l3_workers:
+    frequency: "Daily standups and task assignments"
+    channels: ["task_assignments", "progress_reports", "qa_feedback"]
+    content_types:
+      - task_assignments: "Clear task descriptions with success criteria"
+      - progress_updates: "Regular status reports on assigned work"
+      - qa_feedback: "Detailed feedback on work quality"
+      - rule_updates: "Changes to system-rules.apml that affect work"
+
+task_lifecycle_management:
+  creation_process:
+    input_source: "L2_APML_MASTER completed specifications"
+    analysis_steps:
+      - review_specification: "Understand APML requirements completely"
+      - identify_dependencies: "Map prerequisites and task ordering"
+      - assess_readiness: "Check if compilers/tools are available"
+      - size_appropriately: "Break into 2-4 hour work segments"
+      - define_success: "Create clear acceptance criteria"
+    
+  assignment_logic:
+    current_constraints:
+      - vue_compiler: "NOT_READY - blocks Vue implementation tasks"
+      - manual_coding: "PROHIBITED - no manual component creation"
+      - generic_workers: "Only L3_GENERIC_WORKER roles allowed"
+    
+    valid_assignments:
+      - file_operations: "CSS cleanup, file deletion, organization"
+      - apml_validation: "Check APML syntax and completeness"
+      - documentation: "Update project documentation"
+      - testing_prep: "Prepare test environments and data"
+      - integration_ready: "Tasks that don't require coding"
+    
+  quality_assurance:
+    review_process:
+      - receive_submission: "L3 worker submits completed work"
+      - check_requirements: "Verify all task requirements met"
+      - validate_compliance: "Ensure follows system-rules.apml"
+      - test_functionality: "Verify work actually works"
+      - apml_alignment: "Check against original APML specification"
+    
+    feedback_types:
+      - pass: "Work meets all requirements, mark complete"
+      - revise: "Specific issues to fix, return to L3 worker"
+      - reject: "Fundamental problems, reassign or escalate"
+      - escalate: "Issues requiring L1_ORCH intervention"
+
+dependency_tracking:
+  system_dependencies:
+    vue_compiler:
+      status: "NOT_READY"
+      waiting_for: "Technical implementation by L3_WORKER"
+      blocks_tasks: ["TASK_19", "TASK_20", "TASK_21", "TASK_22", "TASK_29", "TASK_30", "TASK_31", "TASK_37"]
+      unblocks_when: "Compiler successfully processes APML to Vue"
+    
+    apml_specifications:
+      master_app: "Complete - ready for task creation"
+      visualize_layout: "Complete - ready for task creation"
+      eyetest_compare: "Complete - ready for task creation"
+      journey_timeline: "Complete - ready for task creation"
+      
+  task_dependencies:
+    prerequisite_mapping:
+      - cleanup_first: "File cleanup before new implementation"
+      - specs_before_code: "APML specifications before implementation"
+      - compilers_before_generation: "Working compilers before code generation"
+      - testing_after_implementation: "Testing follows implementation"
+
+escalation_procedures:
+  to_l1_orch:
+    triggers:
+      - strategic_decisions: "Major workflow or priority changes needed"
+      - resource_allocation: "Need for additional workers or tools"
+      - policy_conflicts: "Conflicting requirements from different sources"
+      - system_failures: "Critical infrastructure problems"
+      - timeline_issues: "Major delays affecting project delivery"
+    
+    escalation_format:
+      - situation_summary: "Clear description of the issue"
+      - impact_assessment: "How it affects project progress"
+      - attempted_solutions: "What has been tried already"
+      - recommendation: "Proposed solution or next steps"
+      - urgency_level: "Critical/High/Medium/Low priority"
+
+  from_l3_workers:
+    accepted_escalations:
+      - task_clarification: "Unclear requirements or success criteria"
+      - apml_spec_conflicts: "Contradictory information in specifications"
+      - tool_availability: "Missing tools or blocked dependencies"
+      - qa_feedback_disputes: "Disagreement with quality feedback"
+      - system_rule_questions: "Uncertainty about current workflows"
+
+communication_standards:
+  message_formats:
+    task_assignment:
+      - task_id: "Unique identifier for tracking"
+      - title: "Clear, descriptive task name"
+      - description: "Detailed work requirements"
+      - success_criteria: "Specific acceptance conditions"
+      - dependencies: "Prerequisites that must be complete"
+      - tools_required: "Specific tools or access needed"
+      - estimated_duration: "Expected completion time"
+    
+    progress_report:
+      - task_id: "Reference to assigned task"
+      - current_status: "Specific progress percentage or milestone"
+      - time_spent: "Actual time invested so far"
+      - issues_encountered: "Problems or blockers found"
+      - next_steps: "Planned work for next period"
+      - completion_estimate: "Revised time to completion"
+    
+    quality_feedback:
+      - task_id: "Reference to submitted work"
+      - overall_assessment: "Pass/Revise/Reject/Escalate"
+      - specific_issues: "Detailed list of problems found"
+      - required_changes: "Exact modifications needed"
+      - resubmission_criteria: "What constitutes acceptable revision"
+      - resources_provided: "Links to documentation or examples"
+
+monitoring_and_metrics:
+  system_health:
+    - task_completion_rate: "Percentage of tasks completed successfully"
+    - average_revision_cycles: "How many rounds of feedback per task"
+    - dependency_blocking_time: "Time tasks spend waiting for prerequisites"
+    - rule_compliance_rate: "Percentage of work following system-rules.apml"
+    - escalation_frequency: "How often issues require L1_ORCH intervention"
+  
+  worker_performance:
+    - task_assignment_balance: "Even distribution of work across L3 workers"
+    - individual_completion_rates: "Performance tracking per worker"
+    - quality_trend_analysis: "Improvement or decline in work quality"
+    - communication_effectiveness: "Clarity and timeliness of updates"
+
+continuous_improvement:
+  protocol_updates:
+    - regular_reviews: "Monthly assessment of communication effectiveness"
+    - feedback_integration: "Incorporate suggestions from all levels"
+    - workflow_optimization: "Streamline processes based on experience"
+    - tool_enhancement: "Identify needs for better coordination tools"
+  
+  system_evolution:
+    - compiler_readiness: "Adapt protocols when compilers become available"
+    - role_refinement: "Adjust responsibilities based on team growth"
+    - process_automation: "Identify routine tasks for automation"
+    - knowledge_management: "Capture and share coordination best practices"
+
+current_active_coordination:
+  immediate_priorities:
+    - l3_worker_1: "Monitoring CSS cleanup task (TASK_14)"
+    - l3_worker_2: "Monitoring visualize code deletion (TASK_18)"
+    - system_rules: "Maintaining current no-manual-coding policy"
+    - queue_management: "Ensuring only compiler-ready tasks are assignable"
+  
+  pending_coordination:
+    - apml_master_sync: "Coordinate on pending APML specifications"
+    - compiler_readiness: "Prepare for Vue compiler availability"
+    - task_queue_cleanup: "Organize blocked tasks for future assignment"
+    - worker_briefings: "Ensure all agents understand current constraints"
+
+success_metrics:
+  coordination_effectiveness:
+    - zero_non_compliant_production: "No unapproved work reaches users"
+    - clear_task_lineage: "All tasks trace back to APML specifications"
+    - informed_workers: "All L3 workers know current system rules"
+    - smooth_workflows: "Minimal L1_ORCH intervention needed"
+    - quality_maintained: "High standards during system transitions"
+  
+  communication_quality:
+    - timely_updates: "All rule changes communicated within 1 hour"
+    - clear_feedback: "Specific, actionable quality feedback provided"
+    - effective_escalation: "Issues resolved at appropriate level"
+    - proactive_coordination: "Problems prevented through good communication"

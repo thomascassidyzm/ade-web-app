@@ -1,0 +1,116 @@
+/* Better phase navigation */
+.phase-progress {
+  display: flex;
+  align-items: center;
+  gap: 0;
+  background: rgba(26, 26, 26, 0.8);
+  padding: 8px 20px;
+  border-radius: 30px;
+  box-shadow: 0 2px 10px rgba(0, 0, 0, 0.5);
+}
+
+.phase-item {
+  position: relative;
+  padding: 8px 16px;
+  cursor: pointer;
+  transition: all 0.3s;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border-radius: 20px;
+}
+
+.phase-item:hover {
+  background: rgba(0, 255, 136, 0.1);
+  transform: none;
+}
+
+.phase-number {
+  width: 24px !important;
+  height: 24px !important;
+  font-size: 0.75rem !important;
+  font-weight: bold;
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  background: transparent !important;
+}
+
+.phase-name {
+  font-size: 0.75rem !important;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+/* Active state */
+.phase-item.active {
+  background: rgba(0, 255, 136, 0.2);
+  box-shadow: 0 0 20px rgba(0, 255, 136, 0.3);
+}
+
+.phase-item.active .phase-number {
+  background: #00ff88 !important;
+  color: #000;
+  border-color: #00ff88;
+}
+
+.phase-item.active .phase-name {
+  color: #00ff88;
+  font-weight: 600;
+}
+
+/* Completed state */
+.phase-item.completed .phase-number {
+  background: transparent !important;
+  color: #00ff88;
+  border-color: #00ff88;
+}
+
+.phase-item.completed .phase-number::after {
+  content: '✓';
+  position: absolute;
+  font-size: 1rem;
+  left: 50%;
+  top: 50%;
+  transform: translate(-50%, -50%);
+}
+
+.phase-item.completed .phase-name {
+  color: rgba(0, 255, 136, 0.8);
+}
+
+/* Arrows between phases */
+.phase-connector {
+  width: 20px;
+  height: 2px;
+  background: rgba(255, 255, 255, 0.2);
+  margin: 0 -5px;
+  position: relative;
+}
+
+.phase-connector::after {
+  content: '▶';
+  position: absolute;
+  right: -5px;
+  top: -7px;
+  font-size: 0.6rem;
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.phase-connector.completed {
+  background: #00ff88;
+}
+
+.phase-connector.completed::after {
+  color: #00ff88;
+}
+
+/* Disabled future phases */
+.phase-item:not(.completed):not(.active) {
+  opacity: 0.6;
+}
+
+.phase-item:not(.completed):not(.active):hover {
+  opacity: 0.8;
+  background: rgba(255, 255, 255, 0.05);
+}

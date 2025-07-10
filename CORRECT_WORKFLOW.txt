@@ -1,0 +1,23 @@
+CORRECTED WORKFLOW - APML FIRST
+
+1. L2_APML_MASTER: Create vue-compiler.apml spec (TASK_53)
+2. L3_WORKERS: Implement compiler FROM the APML spec
+3. Test compiler with other APML specs
+
+The compiler's own specification must be APML.
+
+L2_APML_MASTER - claim TASK_53 NOW:
+```bash
+./claim-task.sh architect
+```
+
+Write vue-compiler.apml defining:
+- Input: APML component spec
+- Output: Vue SFC format
+- Transformation rules
+- Component structure mapping
+- Props/events/slots handling
+
+L3_WORKERS: WAIT for vue-compiler.apml before implementing.
+
+All development follows: APML spec → Implementation

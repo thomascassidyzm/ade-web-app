@@ -1,0 +1,63 @@
+/* Minimal navbar */
+.ade-header {
+  padding: 0.75rem 2rem !important;
+}
+
+.logo h1 {
+  font-size: 1.5rem !important;
+  margin: 0 !important;
+}
+
+.tagline {
+  display: none !important;
+}
+
+.phase-progress {
+  margin: 0.25rem auto !important;
+}
+
+.phase-item {
+  padding: 0.25rem 0.75rem !important;
+}
+
+.phase-number {
+  width: 28px !important;
+  height: 28px !important;
+  font-size: 0.75rem !important;
+}
+
+.phase-name {
+  font-size: 0.65rem !important;
+}
+
+/* Message flows panel */
+#message-flows {
+  padding: 1rem;
+  height: 100%;
+  overflow-y: auto;
+}
+
+.flow-item {
+  padding: 1rem;
+  margin: 0.5rem 0;
+  background: rgba(0, 255, 136, 0.1);
+  border: 1px solid #00ff88;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.flow-item:hover {
+  background: rgba(0, 255, 136, 0.2);
+  transform: translateX(5px);
+}
+
+.flow-type {
+  font-weight: bold;
+  color: #00ffff;
+}
+
+.flow-arrow {
+  margin: 0 10px;
+  color: #00ff88;
+}

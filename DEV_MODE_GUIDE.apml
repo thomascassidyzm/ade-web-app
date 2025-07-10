@@ -1,0 +1,191 @@
+<apml version="1.0">
+  <metadata>
+    <title>ADE Dev Mode - Parallel Claude Code Workers</title>
+    <type>guide</type>
+    <created>2024-01-09</created>
+    <author>ADE System</author>
+  </metadata>
+
+  <overview>
+    <purpose>
+      Dev Mode uses multiple Claude Code instances as parallel workers, 
+      coordinated through the ADE web app. This gives you the full ADE 
+      experience (visualization, eye-testing) while avoiding API costs.
+    </purpose>
+  </overview>
+
+  <architecture>
+    <diagram type="flow">
+      <node id="l1_orch" type="coordinator">
+        <name>Claude Desktop (L1_ORCH)</name>
+        <role>Master Orchestrator</role>
+      </node>
+      
+      <node id="ade_web" type="hub">
+        <name>ADE Web App</name>
+        <components>
+          <component>Work Queue</component>
+          <component>VFS Storage</component>
+          <component>Visualization</component>
+          <component>Eye Testing</component>
+        </components>
+      </node>
+      
+      <node id="worker_1" type="worker">
+        <name>Claude Code #1</name>
+        <specialty>Frontend</specialty>
+      </node>
+      
+      <node id="worker_2" type="worker">
+        <name>Claude Code #2</name>
+        <specialty>Backend</specialty>
+      </node>
+      
+      <flow from="l1_orch" to="ade_web">Coordinates</flow>
+      <flow from="worker_1" to="ade_web">Writes to VFS</flow>
+      <flow from="worker_2" to="ade_web">Writes to VFS</flow>
+      <flow from="ade_web" to="worker_1">Assigns Tasks</flow>
+      <flow from="ade_web" to="worker_2">Assigns Tasks</flow>
+    </diagram>
+  </architecture>
+
+  <setup>
+    <step number="1">
+      <title>ADE Web App</title>
+      <action>Already running at https://ade-web-app-production.up.railway.app</action>
+    </step>
+    
+    <step number="2">
+      <title>Start L1_ORCH in Claude Desktop</title>
+      <instructions>
+        <instruction>Open Claude Desktop</instruction>
+        <instruction>Configure as L1_ORCH - master orchestrator</instruction>
+        <instruction>Remember: L1_ORCH coordinates but does NOT code</instruction>
+      </instructions>
+    </step>
+    
+    <step number="3">
+      <title>Start Worker Instances</title>
+      <commands>
+        <command context="terminal_1">
+          cd /Users/tomcassidy/claude-code-experiments/APML-Projects/ADE/ade-web-app
+          ./start-worker.sh frontend
+        </command>
+        <command context="terminal_2">
+          cd /Users/tomcassidy/claude-code-experiments/APML-Projects/ADE/ade-web-app
+          ./start-worker.sh backend
+        </command>
+        <command context="terminal_3">
+          cd /Users/tomcassidy/claude-code-experiments/APML-Projects/ADE/ade-web-app
+          ./start-worker.sh designer
+        </command>
+      </commands>
+    </step>
+  </setup>
+
+  <worker-workflow>
+    <task id="poll" priority="1">
+      <title>Poll for tasks</title>
+      <frequency>30 seconds</frequency>
+      <endpoint>GET /api/queue/tasks/{worker_type}</endpoint>
+    </task>
+    
+    <task id="claim" priority="2">
+      <title>Claim a task</title>
+      <endpoint>POST /api/queue/claim</endpoint>
+      <payload>
+        <field name="taskId" type="string" required="true"/>
+        <field name="agentId" type="string" required="true"/>
+      </payload>
+    </task>
+    
+    <task id="execute" priority="3">
+      <title>Execute work using MCP tools</title>
+      <tools>
+        <tool name="vfs_write">Write all outputs to VFS</tool>
+        <tool name="vfs_read">Read from VFS</tool>
+        <tool name="generate_component">Create UI components</tool>
+        <tool name="generate_api">Create API endpoints</tool>
+      </tools>
+      <critical>ALL outputs MUST go to VFS, not local files!</critical>
+    </task>
+    
+    <task id="complete" priority="4">
+      <title>Mark task complete</title>
+      <endpoint>POST /api/queue/complete</endpoint>
+      <payload>
+        <field name="taskId" type="string" required="true"/>
+        <field name="result" type="object" required="true"/>
+      </payload>
+    </task>
+  </worker-workflow>
+
+  <rules>
+    <do>
+      <rule>Write ALL outputs to VFS using vfs_write</rule>
+      <rule>Check dependencies before claiming tasks</rule>
+      <rule>Mark tasks complete when done</rule>
+      <rule>Use the web UI to visualize progress</rule>
+      <rule>Let L1_ORCH create and manage tasks</rule>
+    </do>
+    
+    <dont>
+      <rule>Write to local files (use VFS only)</rule>
+      <rule>Have L1_ORCH write code</rule>
+      <rule>Skip the task queue (causes conflicts)</rule>
+      <rule>Work on tasks outside your specialty</rule>
+    </dont>
+  </rules>
+
+  <example-flow>
+    <step number="1">
+      <actor>User</actor>
+      <action>Requests "Netflix-like family app" in browser</action>
+    </step>
+    
+    <step number="2">
+      <actor>L1_ORCH</actor>
+      <action>Creates build tasks via API</action>
+      <endpoint>POST /api/queue/create-build</endpoint>
+    </step>
+    
+    <step number="3">
+      <actor>Workers</actor>
+      <parallel>
+        <task>Architect designs system → VFS</task>
+        <task>Designer creates UI → VFS</task>
+        <task>Frontend builds components → VFS</task>
+        <task>Backend implements APIs → VFS</task>
+      </parallel>
+    </step>
+    
+    <step number="4">
+      <actor>User</actor>
+      <experience>
+        <phase>VISUALIZE: See wireframes</phase>
+        <phase>EYE-TEST: Pick designs</phase>
+        <phase>DEPLOY: Get final app</phase>
+      </experience>
+    </step>
+  </example-flow>
+
+  <monitoring>
+    <endpoint name="Queue Status">
+      <url>GET /api/queue/stats</url>
+      <returns>pending, claimed, completed counts</returns>
+    </endpoint>
+    
+    <endpoint name="VFS Contents">
+      <url>GET /api/vfs/list</url>
+      <returns>all files in virtual file system</returns>
+    </endpoint>
+  </monitoring>
+
+  <tips>
+    <tip>Specialize your workers - Each should focus on one type</tip>
+    <tip>Use VFS for everything - It's the shared brain</tip>
+    <tip>Let tasks queue up - Workers will claim when ready</tip>
+    <tip>Trust the dependencies - They ensure correct order</tip>
+    <tip>Watch the web UI - It shows the full picture</tip>
+  </tips>
+</apml>

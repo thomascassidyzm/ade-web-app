@@ -1,0 +1,47 @@
+{
+  "timestamp": "2025-07-10T17:45:36.704Z",
+  "trigger": "autosave",
+  "files": {
+    "agents/data-processor.apml": {
+      "content": "---\ntype: agent\nname: DataProcessor\nversion: 1.0.0\n---\n\ncapabilities:\n  - name: ProcessData\n    input: JSON\n    output: ProcessedData\n",
+      "metadata": {
+        "type": "agent-spec",
+        "created": "2025-07-09T01:04:51.965Z",
+        "path": "agents/data-processor.apml"
+      }
+    },
+    "components/ui-component.apml": {
+      "content": "---\ntype: component\nname: UIComponent\nframework: react\n---\n\nproperties:\n  theme: dark\n  responsive: true\n",
+      "metadata": {
+        "type": "component-spec",
+        "created": "2025-07-09T01:04:51.966Z",
+        "path": "components/ui-component.apml"
+      }
+    },
+    "projects/sub-project/nested/deep-file.apml": {
+      "content": "Nested content test",
+      "metadata": {
+        "nested": true,
+        "created": "2025-07-09T01:04:51.967Z",
+        "path": "projects/sub-project/nested/deep-file.apml"
+      }
+    },
+    "projects/test-project.apml": {
+      "content": "---\ntype: project\nname: TestProject\ncreated: 2025-07-09T01:04:51.962Z\n---\n\nagents:\n  - DataProcessor\n  - TestAgent\n  \ncomponents:\n  - UIComponent\n",
+      "metadata": {
+        "type": "project-spec",
+        "created": "2025-07-09T01:04:51.966Z",
+        "path": "projects/test-project.apml"
+      }
+    },
+    "specs/test-agent.apml": {
+      "content": "---\ntype: agent\nname: TestAgent\nversion: 1.0.0\n---\n\ncapabilities:\n  - name: TestCapability\n    description: A test capability for VFS testing\n    \nproperties:\n  test: true\n  timestamp: 2025-07-09T01:03:36.755Z\n",
+      "metadata": {
+        "type": "apml",
+        "format": "agent",
+        "created": "2025-07-09T01:03:36.759Z",
+        "path": "specs/test-agent.apml"
+      }
+    }
+  }
+}

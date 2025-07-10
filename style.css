@@ -1,0 +1,43 @@
+/* Base styles for ADE */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Custom styles */
+@layer base {
+  body {
+    @apply antialiased;
+  }
+}
+
+@layer components {
+  /* ADE-specific component styles */
+  .ade-gradient {
+    @apply bg-gradient-to-r from-blue-500 to-purple-600;
+  }
+  
+  .ade-button {
+    @apply px-4 py-2 rounded-lg font-medium transition-all duration-200;
+    @apply hover:shadow-md active:scale-95;
+  }
+  
+  .ade-card {
+    @apply bg-white rounded-lg shadow-sm border border-gray-200;
+    @apply hover:shadow-md transition-shadow duration-200;
+  }
+}
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.fade-in {
+  animation: fadeIn 0.3s ease-out;
+}
+
+/* Message flow colors */
+.flow-app-to-user { @apply text-blue-600 bg-blue-50; }
+.flow-user-to-app { @apply text-green-600 bg-green-50; }
+.flow-app-to-app { @apply text-purple-600 bg-purple-50; }

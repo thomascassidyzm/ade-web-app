@@ -1,0 +1,204 @@
+apml_version: 1.0
+metadata:
+  title: "ADE Phone App Master Specification"
+  author: "L2_APML_MASTER"
+  authority: "sole_apml_writer"
+  created: "2025-07-09T14:40:00Z"
+  
+app_structure:
+  type: mobile_web_app
+  orientation: portrait
+  viewport: "width=device-width, initial-scale=1.0"
+  
+  phases:
+    - id: "analyze"
+      name: "Analyze"
+      icon: "🔍"
+      description: "Data analysis and research phase"
+      
+    - id: "design" 
+      name: "Design"
+      icon: "🎨"
+      description: "Creative design and wireframing"
+      
+    - id: "eyetest"
+      name: "Eye Test"
+      icon: "👁️"
+      description: "Visual testing and comparison"
+
+navigation:
+  type: bottom_tabs
+  position: fixed_bottom
+  background: "#0a0a0a"
+  
+  tabs:
+    - phase: "analyze"
+      label: "Analyze"
+      icon: "🔍"
+      active_color: "#00ffff"
+      
+    - phase: "design"
+      label: "Design" 
+      icon: "🎨"
+      active_color: "#00ff88"
+      
+    - phase: "eyetest"
+      label: "Eye Test"
+      icon: "👁️"
+      active_color: "#ff00ff"
+
+layout:
+  type: single_panel_mobile
+  header:
+    height: 60px
+    background: "#141414"
+    border: "1px solid #2a2a2a"
+    
+  content:
+    flex: 1
+    background: "#0a0a0a"
+    overflow: auto
+    
+  footer:
+    height: 80px
+    background: "#141414"
+    border_top: "1px solid #2a2a2a"
+
+components:
+  analyze_panel:
+    type: "component"
+    file: "AnalyzePanel.vue"
+    props:
+      - name: "data_source"
+        type: "string"
+        default: "user_input"
+    slots:
+      - "content"
+      - "results"
+      
+  design_panel:
+    type: "component"
+    file: "DesignPanel.vue"
+    props:
+      - name: "wireframe_tools"
+        type: "array"
+        default: ["rectangle", "circle", "text", "line"]
+    slots:
+      - "canvas"
+      - "toolbox"
+      
+  eyetest_panel:
+    type: "component"
+    file: "EyeTestPanel.vue"
+    props:
+      - name: "comparison_mode"
+        type: "string"
+        default: "side_by_side"
+    slots:
+      - "left_view"
+      - "right_view"
+      - "controls"
+
+data_flows:
+  analyze_to_design:
+    trigger: "analyze_complete"
+    data: ["user_requirements", "key_insights", "constraints"]
+    target: "design_panel"
+    
+  design_to_eyetest:
+    trigger: "design_complete"
+    data: ["wireframe_data", "design_variants", "user_flows"]
+    target: "eyetest_panel"
+    
+  eyetest_to_analyze:
+    trigger: "test_results"
+    data: ["comparison_results", "feedback", "improvements"]
+    target: "analyze_panel"
+
+states:
+  global:
+    current_phase: "analyze"
+    project_data: {}
+    user_session: {}
+    
+  analyze:
+    input_data: ""
+    processed_results: []
+    analysis_complete: false
+    
+  design:
+    wireframe_elements: []
+    current_tool: "rectangle"
+    canvas_state: {}
+    
+  eyetest:
+    variant_a: null
+    variant_b: null
+    comparison_mode: "side_by_side"
+    test_results: []
+
+interactions:
+  phase_navigation:
+    type: "tap"
+    target: "bottom_tabs"
+    action: "switch_phase"
+    animation: "slide_horizontal"
+    
+  analyze_input:
+    type: "text_input"
+    target: "analyze_panel"
+    validation: "required"
+    
+  design_tools:
+    type: "tool_selection"
+    target: "design_panel"
+    tools: ["rectangle", "circle", "text", "line"]
+    
+  eyetest_comparison:
+    type: "swipe"
+    target: "eyetest_panel"
+    modes: ["side_by_side", "overlay", "diff"]
+
+responsive:
+  mobile:
+    breakpoint: "< 768px"
+    layout: "single_panel"
+    navigation: "bottom_tabs"
+    
+  tablet:
+    breakpoint: "768px - 1024px"
+    layout: "two_panel"
+    navigation: "side_tabs"
+    
+  desktop:
+    breakpoint: "> 1024px"
+    layout: "three_panel"
+    navigation: "top_tabs"
+
+theming:
+  primary_color: "#00ff88"
+  secondary_color: "#00ffff"
+  accent_color: "#ff00ff"
+  background: "#0a0a0a"
+  surface: "#141414"
+  border: "#2a2a2a"
+  text: "#ffffff"
+  text_secondary: "#999999"
+
+performance:
+  lazy_loading: true
+  component_caching: true
+  image_optimization: true
+  code_splitting: true
+  
+accessibility:
+  keyboard_navigation: true
+  screen_reader: true
+  high_contrast: true
+  font_scaling: true
+
+implementation_notes:
+  - All components MUST implement this specification exactly
+  - No deviations allowed without L2_APML_MASTER approval
+  - L3 workers implement only - no APML modifications
+  - This is the single source of truth for the ADE phone app

@@ -1,0 +1,27 @@
+apml_version: 1.0
+metadata:
+  title: L3 Worker Instructions - UPDATED
+  priority: CRITICAL
+  effective_date: immediate
+
+NEW_RULES:
+  vue_development:
+    - NO manual Vue component writing
+    - WAIT for APML-to-Vue compiler
+    - Workflow: APML → Compiler → Vue
+    - If task says "implement Vue", respond: "Waiting for compiler"
+    
+  current_status:
+    compiler_exists: false
+    manual_coding_allowed: false
+    
+  when_compiler_ready:
+    - Run: apml-to-vue compile [filename].apml
+    - Test generated components
+    - Report issues to L2_APML_MASTER
+    - NEVER modify generated code directly
+
+message_to_workers: |
+  HALT ALL VUE IMPLEMENTATION
+  Compiler being built (TASK_34)
+  Check this file before starting any task

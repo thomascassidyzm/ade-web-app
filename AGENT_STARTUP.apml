@@ -1,0 +1,51 @@
+apml_version: 1.0
+metadata:
+  title: AGENT STARTUP INSTRUCTIONS - READ FIRST
+  priority: CRITICAL
+  for: ALL_AGENTS
+
+startup_sequence:
+  step_1_identify:
+    - Read your role brief (L2_COORDINATOR_BRIEF.apml or L3_WORKER_BRIEF.apml)
+    - Note your agent type (architect/frontend/backend/designer)
+    
+  step_2_check_tasks:
+    command: "curl -s http://localhost:3001/api/queue/tasks/[YOUR_TYPE]"
+    example_architect: "curl -s http://localhost:3001/api/queue/tasks/architect"
+    example_frontend: "curl -s http://localhost:3001/api/queue/tasks/frontend"
+    
+  step_3_claim_task:
+    command: "./claim-task.sh [YOUR_TYPE]"
+    example: "./claim-task.sh architect"
+    
+  step_4_complete_task:
+    command: "./complete-task.sh [TASK_ID]"
+    example: "./complete-task.sh TASK_39_1752081829789"
+
+quick_start:
+  L2_COORDINATOR: |
+    cd /Users/tomcassidy/claude-code-experiments/APML-Projects/ADE/ade-web-app
+    ./claim-task.sh architect
+    
+  L3_WORKER: |
+    cd /Users/tomcassidy/claude-code-experiments/APML-Projects/ADE/ade-web-app
+    ./claim-task.sh frontend
+
+current_valid_tasks:
+  L2_COORDINATOR:
+    - Create system-rules.apml
+    - Define workflows
+    - Review L3 work
+    
+  L3_WORKER:
+    - Clean CSS Conflicts
+    - HALT: Delete visualize code
+    - File organization
+    - Documentation
+    
+blocked_tasks:
+  - All Vue implementation (waiting for compiler)
+  - Component integration
+
+always_check: |
+  cat AGENT_STARTUP.apml

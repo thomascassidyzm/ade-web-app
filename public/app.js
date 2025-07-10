@@ -375,3 +375,103 @@ class ADEApp {
 document.addEventListener('DOMContentLoaded', () => {
   window.adeApp = new ADEApp();
 });
+// VFS Tree Display
+class VFSTree {
+  constructor(container) {
+    this.container = container;
+    this.refresh();
+    setInterval(() => this.refresh(), 2000); // Auto-refresh every 2s
+  }
+  
+  async refresh() {
+    try {
+      const response = await fetch('/api/vfs/list');
+      const data = await response.json();
+      this.renderTree(data.files || []);
+    } catch (error) {
+      console.error('VFS refresh error:', error);
+    }
+  }
+  
+  async getDirectoryContents(path) {
+    const response = await fetch(`/api/vfs/list/${path}`);
+    const data = await response.json();
+    return data.files || [];
+  }
+  
+  renderTree(files) {
+    this.container.innerHTML = '<h3>VFS Files</h3>' + this.renderDirectory(files, '');
+  }
+  
+  renderDirectory(files, path) {
+    return '<ul class="vfs-tree">' + files.map(file => 
+      `<li class="vfs-item" data-path="${path}${file}">
+        <span class="vfs-name">${file}</span>
+      </li>`
+    ).join('') + '</ul>';
+  }
+}
+
+// Initialize VFS tree when ready
+document.addEventListener('DOMContentLoaded', () => {
+  const vfsContainer = document.createElement('div');
+  vfsContainer.id = 'vfs-tree';
+  vfsContainer.className = 'vfs-container';
+  vfsContainer.style.cssText = `
+    position: fixed;
+    right: 20px;
+    top: 100px;
+    width: 250px;
+    background: #1a1a1a;
+    border: 1px solid #00ff88;
+    padding: 15px;
+    border-radius: 8px;
+    color: #00ff88;
+    max-height: 70vh;
+    overflow-y: auto;
+  `;
+  document.body.appendChild(vfsContainer);
+  
+  window.vfsTree = new VFSTree(vfsContainer);
+});
+
+// Add VFS toggle button immediately
+(function() {
+  const btn = document.createElement('button');
+  btn.innerHTML = '📁 VFS';
+  btn.style.cssText = 'position:fixed;right:20px;bottom:20px;padding:10px 20px;background:#1a1a1a;border:1px solid #00ff88;color:#00ff88;border-radius:8px;cursor:pointer;z-index:3000;font-family:monospace;';
+  document.body.appendChild(btn);
+  
+  const container = document.createElement('div');
+  container.innerHTML = '<h3>Loading VFS...</h3>';
+  container.style.cssText = 'position:fixed;right:20px;bottom:80px;width:300px;max-height:60vh;background:#1a1a1a;border:1px solid #00ff88;padding:15px;border-radius:8px;color:#00ff88;overflow-y:auto;font-family:monospace;font-size:14px;z-index:3000;display:none;';
+  document.body.appendChild(container);
+  
+  let visible = false;
+  btn.onclick = () => {
+    visible = !visible;
+    container.style.display = visible ? 'block' : 'none';
+    if (visible) loadVFS();
+  };
+  
+  async function loadVFS() {
+    const res = await fetch('/api/vfs/list/components');
+    const data = await res.json();
+    container.innerHTML = '<h3>VFS Components</h3><ul>' + 
+      (data.files || []).map(f => '<li>' + f + '</li>').join('') + 
+      '</ul>';
+  }
+})();
+
+// Quick navigation to VISUALIZE
+document.addEventListener('DOMContentLoaded', () => {
+  setTimeout(() => {
+    if (window.adeApp) {
+      window.adeApp.updatePhase('visualize');
+    }
+  }, 100);
+});
+
+// Hide VFS displays
+document.querySelectorAll('#vfs-tree, .vfs-container').forEach(el => el.remove());
+document.querySelector('button[textContent*="VFS"]')?.remove();

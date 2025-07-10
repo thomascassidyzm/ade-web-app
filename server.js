@@ -302,3 +302,49 @@ app.post('/api/vfs/export', async (req, res) => {
 app.get('/health', (req, res) => {
   res.json({ status: 'healthy' });
 });
+// Work Queue
+const WorkQueue = require('./work-queue');
+const workQueue = new WorkQueue();
+
+// Queue endpoints
+// Add task to queue
+app.post('/api/queue/add', (req, res) => {
+  const task = workQueue.addTask(req.body);
+  res.json(task);
+});
+
+app.get('/api/queue/tasks/:type?', (req, res) => {
+  const tasks = workQueue.getTasks(req.params.type);
+  res.json(tasks);
+});
+
+app.post('/api/queue/claim', (req, res) => {
+  const { taskId, agentId } = req.body;
+  const task = workQueue.claimTask(taskId, agentId);
+  res.json(task || { error: 'Task not available' });
+});
+
+app.post('/api/queue/complete', (req, res) => {
+  const { taskId, result } = req.body;
+  const task = workQueue.completeTask(taskId, result);
+  res.json(task || { error: 'Task not found' });
+});
+
+// Get queue statistics
+app.get('/api/queue/stats', (req, res) => {
+  const stats = workQueue.getStats();
+  res.json(stats);
+});
+
+// Create build tasks for an app
+app.post('/api/queue/create-build', (req, res) => {
+  const { appDescription } = req.body;
+  if (!appDescription) {
+    return res.status(400).json({ error: 'App description required' });
+  }
+  const tasks = workQueue.createBuildTasks(appDescription);
+  res.json({ 
+    message: `Created ${tasks.length} build tasks`,
+    tasks: tasks.map(t => ({ id: t.id, type: t.type, title: t.title }))
+  });
+});

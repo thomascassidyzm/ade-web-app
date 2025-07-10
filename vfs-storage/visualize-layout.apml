@@ -1,0 +1,207 @@
+apml_version: 1.0
+metadata:
+  title: "VISUALIZE Phase 3-Panel Layout Specification"
+  author: "L2_APML_MASTER"
+  parent_spec: "master-app.apml"
+  phase: "design"
+  
+layout_definition:
+  type: three_panel_responsive
+  orientation: horizontal
+  
+  panels:
+    left_panel:
+      id: "wireframe_panel"
+      width: "33.333%"
+      component: "VisualizeWireframe"
+      background: "#141414"
+      border_right: "2px solid #2a2a2a"
+      
+      header:
+        title: "Wireframe"
+        icon: "□"
+        color: "#00ffff"
+        
+      content:
+        canvas_size: "300x400"
+        tools: ["rectangle", "circle", "text", "line"]
+        grid: true
+        snap_to_grid: true
+        
+      footer:
+        save_button: true
+        clear_button: true
+        export_button: true
+        
+    center_panel:
+      id: "flow_panel"
+      width: "33.333%"
+      component: "VisualizeFlow"
+      background: "#141414"
+      border_right: "2px solid #2a2a2a"
+      
+      header:
+        title: "User Flow"
+        icon: "→"
+        color: "#00ff88"
+        
+      content:
+        node_types: ["start", "process", "decision", "end"]
+        connection_style: "bezier"
+        auto_layout: true
+        
+      footer:
+        add_node_button: true
+        layout_button: true
+        validate_button: true
+        
+    right_panel:
+      id: "journey_panel"
+      width: "33.333%"
+      component: "VisualizeJourney"
+      background: "#141414"
+      
+      header:
+        title: "Journey"
+        icon: "📍"
+        color: "#ff00ff"
+        
+      content:
+        timeline_orientation: "vertical"
+        touchpoints: []
+        emotions: true
+        
+      footer:
+        add_touchpoint_button: true
+        timeline_controls: true
+        export_timeline: true
+
+responsive_behavior:
+  mobile:
+    layout: "single_panel_tabs"
+    active_panel: "wireframe_panel"
+    
+    tabs:
+      - id: "wireframe_tab"
+        label: "Wireframe"
+        icon: "□"
+        panel: "wireframe_panel"
+        
+      - id: "flow_tab"
+        label: "Flow"
+        icon: "→"
+        panel: "flow_panel"
+        
+      - id: "journey_tab"
+        label: "Journey"
+        icon: "📍"
+        panel: "journey_panel"
+        
+  tablet:
+    layout: "two_panel_adaptive"
+    primary_panel: "wireframe_panel"
+    secondary_panel: "flow_panel"
+    
+    toggle_third:
+      button_position: "top_right"
+      animation: "slide_in"
+      
+  desktop:
+    layout: "three_panel_fixed"
+    all_panels_visible: true
+
+data_synchronization:
+  wireframe_to_flow:
+    trigger: "wireframe_element_added"
+    data: ["element_type", "position", "properties"]
+    action: "create_flow_node"
+    
+  flow_to_journey:
+    trigger: "flow_connection_created"
+    data: ["from_node", "to_node", "relationship"]
+    action: "add_journey_step"
+    
+  journey_to_wireframe:
+    trigger: "touchpoint_selected"
+    data: ["touchpoint_id", "screen_reference"]
+    action: "highlight_wireframe_element"
+
+interactions:
+  cross_panel_selection:
+    type: "click"
+    behavior: "highlight_related_elements"
+    animation: "pulse"
+    
+  panel_resize:
+    type: "drag"
+    target: "panel_dividers"
+    constraints: "min_width_200px"
+    
+  panel_focus:
+    type: "click"
+    behavior: "expand_panel"
+    animation: "smooth_resize"
+
+panel_states:
+  wireframe_panel:
+    current_tool: "rectangle"
+    canvas_elements: []
+    grid_visible: true
+    
+  flow_panel:
+    nodes: []
+    connections: []
+    layout_algorithm: "hierarchical"
+    
+  journey_panel:
+    timeline_data: []
+    current_step: 0
+    emotion_tracking: true
+
+validation_rules:
+  wireframe_elements:
+    - rule: "minimum_one_element"
+      message: "Add at least one wireframe element"
+      
+  flow_connections:
+    - rule: "no_orphaned_nodes"
+      message: "All nodes must be connected"
+      
+  journey_steps:
+    - rule: "logical_sequence"
+      message: "Journey steps must follow logical order"
+
+export_formats:
+  wireframe:
+    - format: "svg"
+      filename: "wireframe.svg"
+      
+  flow:
+    - format: "json"
+      filename: "userflow.json"
+      
+  journey:
+    - format: "csv"
+      filename: "journey-map.csv"
+
+integration_points:
+  parent_container: "VisualizePanel"
+  data_store: "vuex_store"
+  event_bus: "vue_event_bus"
+  
+  required_props:
+    - project_id: "string"
+    - user_id: "string"
+    - phase_data: "object"
+    
+  emitted_events:
+    - "panel_data_changed"
+    - "validation_status_changed"
+    - "export_requested"
+
+implementation_constraints:
+  - ALL panels must be responsive
+  - Data synchronization is MANDATORY
+  - No panel can exist without APML specification
+  - L3 workers implement exactly as specified
+  - NO modifications without L2_APML_MASTER approval
