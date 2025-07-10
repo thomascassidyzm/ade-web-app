@@ -18,8 +18,10 @@ const server = createServer((req, res) => {
     res.writeHead(200, { 'Content-Type': 'text/html' });
     res.end(htmlContent);
   } catch (error) {
-    res.writeHead(404, { 'Content-Type': 'text/plain' });
-    res.end('File not found');
+    console.error('Error serving file:', error.message);
+    console.error('Looking for file at:', join(__dirname, 'index.html'));
+    res.writeHead(500, { 'Content-Type': 'text/plain' });
+    res.end(`Server Error: ${error.message}\nLooking for: ${join(__dirname, 'index.html')}`);
   }
 });
 
