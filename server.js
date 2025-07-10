@@ -15,7 +15,12 @@ const agentSpawner = new AgentSpawner(process.env.ANTHROPIC_API_KEY);
 
 app.use(cors());
 app.use(express.json());
-app.use(express.static('public'));
+app.use(express.static('.'));
+
+// Serve the new ADE interface
+app.get('/', (req, res) => {
+  res.sendFile(path.join(__dirname, 'index.html'));
+});
 
 // L1_ORCH Protocol - Critical Role Definition
 const L1_ORCH_PROTOCOL = {
