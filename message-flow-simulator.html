@@ -48,8 +48,8 @@
         
         const loadApmlFile = async (filename) => {
           try {
-            const response = await fetch(\`/vfs-storage/\${filename}\`);
-            if (!response.ok) throw new Error(\`Failed to load \${filename}\`);
+            const response = await fetch(`/vfs-storage/${filename}`);
+            if (!response.ok) throw new Error(`Failed to load ${filename}`);
             const content = await response.text();
             currentApml.value = jsyaml.load(content);
             selectedFile.value = filename;
@@ -84,7 +84,7 @@
           if (Array.isArray(appToUser) && appToUser.length > 0) {
             return appToUser[0];
           }
-          return \`Welcome to \${currentApml.value?.metadata?.title || 'the app'}\`;
+          return `Welcome to ${currentApml.value?.metadata?.title || 'the app'}`;
         };
         
         const generateUserActions = () => {
@@ -95,7 +95,7 @@
           }
           
           availableActions.value = userToApp.map((action, index) => ({
-            id: \`action-\${index}\`,
+            id: `action-${index}`,
             content: action,
             type: 'user-to-app'
           }));
@@ -125,7 +125,7 @@
           
           // Show background processing
           const process = {
-            id: \`process-\${Date.now()}\`,
+            id: `process-${Date.now()}`,
             content: appToApp[Math.floor(Math.random() * appToApp.length)],
             status: 'processing'
           };
@@ -157,7 +157,7 @@
           });
           
           // Update screen state
-          currentScreen.value = \`screen-\${messageHistory.value.length}\`;
+          currentScreen.value = `screen-${messageHistory.value.length}`;
           
           // Generate new user actions for this state
           generateContextualActions(response);
@@ -207,7 +207,7 @@
           }
           
           availableActions.value = contextualActions.map((action, index) => ({
-            id: \`action-\${Date.now()}-\${index}\`,
+            id: `action-${Date.now()}-${index}`,
             content: action,
             type: 'user-to-app'
           }));
@@ -247,7 +247,7 @@
         };
       },
       
-      template: \`
+      template: `
         <div class="min-h-screen bg-gray-900 text-white">
           <!-- Header -->
           <header class="bg-gray-800 border-b border-gray-700 p-4">
@@ -420,7 +420,7 @@
             </div>
           </div>
         </div>
-      \`
+      `
     }).mount('#app');
   </script>
 </body>
