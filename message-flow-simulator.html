@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>App Screen Simulator - Interactive APML Validation</title>
+  <title>ProjectChat - App Experience Simulator</title>
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
   <script src="https://unpkg.com/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -41,6 +41,7 @@
         const appScreens = ref([]);
         const screenHistory = ref([]);
         const currentScreenIndex = ref(0);
+        const showTechnicalDetails = ref(false);
         
         const loadApp = async (filename) => {
           try {
@@ -255,6 +256,7 @@
           chatHistory,
           appScreens,
           screenHistory,
+          showTechnicalDetails,
           loadApp,
           loadScreen,
           getScreenButtons,
@@ -273,13 +275,10 @@
           <!-- Header -->
           <header class="bg-gray-800 border-b border-gray-700 p-4">
             <div class="flex items-center justify-between">
-              <h1 class="text-xl font-bold">App Screen Simulator</h1>
+              <h1 class="text-xl font-bold">📱 ProjectChat</h1>
               <div class="flex items-center space-x-4">
-                <div class="text-sm text-gray-400">
-                  <span v-if="screenHistory.length > 0">
-                    {{ screenHistory[screenHistory.length - 1]?.name }} → 
-                  </span>
-                  <span class="font-semibold">{{ currentScreenData?.name || 'None' }}</span>
+                <div class="text-sm text-gray-300">
+                  <span class="font-semibold">{{ currentScreenData?.name || 'Loading...' }}</span>
                 </div>
                 <button 
                   v-if="screenHistory.length > 0"
@@ -292,114 +291,78 @@
                   @click="resetScreen"
                   class="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm"
                 >
-                  Reset
+                  🏠 Home
                 </button>
                 <button 
-                  @click="clearMessageSequence"
-                  class="px-3 py-1 bg-purple-600 hover:bg-purple-700 rounded text-sm"
+                  @click="showTechnicalDetails = !showTechnicalDetails"
+                  :class="[
+                    'px-3 py-1 rounded text-sm',
+                    showTechnicalDetails ? 'bg-orange-600 hover:bg-orange-700' : 'bg-gray-600 hover:bg-gray-700'
+                  ]"
                 >
-                  Clear Sequence
+                  {{ showTechnicalDetails ? '👁️ Hide Tech' : '🔧 Show Tech' }}
                 </button>
               </div>
             </div>
           </header>
           
           <div class="flex h-screen">
-            <!-- Left Panel: App Screens + Chat -->
+            <!-- Left Panel: App Flow Map + Chat -->
             <div class="w-1/4 bg-gray-800 border-r border-gray-700 p-4 overflow-y-auto flex flex-col">
-              <!-- App Screens Section -->
+              <!-- App Flow Map -->
               <div class="flex-1">
-                <h2 class="text-lg font-semibold mb-4">ProjectChat Screens</h2>
+                <h2 class="text-lg font-semibold mb-4">🗺️ App Flow</h2>
                 
-                <!-- Current Screen -->
+                <!-- Current Location -->
                 <div v-if="currentScreenData" class="mb-4 p-3 bg-blue-900 rounded">
-                  <div class="font-medium text-blue-100">Current: {{ currentScreenData.name }}</div>
-                  <div class="text-xs text-blue-200">{{ currentScreenData.actions?.length || 0 }} actions available</div>
+                  <div class="font-medium text-blue-100">📍 You are here</div>
+                  <div class="text-sm text-blue-200">{{ currentScreenData.name }}</div>
                 </div>
                 
-                <!-- Screen History -->
-                <div v-if="screenHistory.length > 0" class="mb-4">
-                  <h3 class="text-sm font-medium mb-2 text-gray-400">Screen History:</h3>
-                  <div class="space-y-1">
-                    <button
-                      v-for="(screen, index) in screenHistory.slice(-3)"
-                      :key="screen.id + '-' + index"
-                      @click="goBackToPreviousScreen"
-                      class="w-full text-left px-2 py-1 rounded text-xs bg-gray-700 hover:bg-gray-600 text-gray-300"
-                    >
-                      ← {{ screen.name }}
-                    </button>
-                  </div>
-                </div>
-                
-                <!-- Main Screens (organized by category) -->
-                <div class="space-y-4">
-                  <div>
-                    <h3 class="text-sm font-medium mb-2 text-green-400">Main Screens</h3>
+                <!-- Main App Sections -->
+                <div class="space-y-3">
+                  <div class="p-3 bg-gray-700 rounded">
+                    <h3 class="text-sm font-medium mb-2 text-green-400">Main Sections</h3>
                     <div class="space-y-1">
                       <button
                         v-for="screen in appScreens.filter(s => ['chat_screen', 'task_screen', 'file_screen', 'team_screen'].includes(s.id))"
                         :key="screen.id"
                         @click="loadScreen(screen)"
                         :class="[
-                          'w-full text-left px-3 py-2 rounded text-sm transition-colors',
+                          'w-full text-left px-2 py-1 rounded text-xs transition-colors',
                           selectedScreen === screen.id 
                             ? 'bg-green-600 text-white' 
-                            : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                            : 'bg-gray-600 hover:bg-gray-500 text-gray-300'
                         ]"
                       >
-                        <div class="font-medium">{{ screen.name }}</div>
-                        <div class="text-xs text-gray-400">{{ screen.actions?.length || 0 }} actions</div>
+                        {{ selectedScreen === screen.id ? '👉' : '📄' }} {{ screen.name }}
                       </button>
                     </div>
                   </div>
                   
-                  <div v-if="appScreens.filter(s => !['chat_screen', 'task_screen', 'file_screen', 'team_screen'].includes(s.id)).length > 0">
-                    <h3 class="text-sm font-medium mb-2 text-purple-400">Flow Screens</h3>
+                  <div v-if="screenHistory.length > 0" class="p-3 bg-gray-700 rounded">
+                    <h3 class="text-sm font-medium mb-2 text-purple-400">Recent Screens</h3>
                     <div class="space-y-1">
                       <button
-                        v-for="screen in appScreens.filter(s => !['chat_screen', 'task_screen', 'file_screen', 'team_screen'].includes(s.id))"
-                        :key="screen.id"
-                        @click="loadScreen(screen)"
-                        :class="[
-                          'w-full text-left px-3 py-2 rounded text-sm transition-colors',
-                          selectedScreen === screen.id 
-                            ? 'bg-purple-600 text-white' 
-                            : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
-                        ]"
+                        v-for="(screen, index) in screenHistory.slice(-3)"
+                        :key="screen.id + '-' + index"
+                        @click="goBackToPreviousScreen"
+                        class="w-full text-left px-2 py-1 rounded text-xs bg-gray-600 hover:bg-gray-500 text-gray-300"
                       >
-                        <div class="font-medium text-xs">{{ screen.name }}</div>
-                        <div class="text-xs text-gray-400">{{ screen.actions?.length || 0 }} actions</div>
+                        ← {{ screen.name }}
                       </button>
                     </div>
-                  </div>
-                </div>
-                
-                <div v-if="currentScreenData" class="mt-6 p-3 bg-gray-700 rounded">
-                  <h3 class="font-medium mb-2">{{ currentScreenData.name }}</h3>
-                  <div class="text-xs text-gray-400">
-                    <div>{{ currentScreenData.purpose }}</div>
-                    <div class="mt-2">{{ currentScreenData.actions?.length || 0 }} user actions available</div>
-                  </div>
-                </div>
-                
-                <div v-if="getSequenceStats().userToApp > 0" class="mt-4 p-3 bg-gray-700 rounded">
-                  <h3 class="font-medium mb-2">Current Sequence</h3>
-                  <div class="text-xs text-gray-400 space-y-1">
-                    <div>User Actions: {{ getSequenceStats().userToApp }}</div>
-                    <div>App Processes: {{ getSequenceStats().appToApp }}</div>
-                    <div>App Responses: {{ getSequenceStats().appToUser }}</div>
                   </div>
                 </div>
               </div>
               
               <!-- Chat with ADE Section -->
               <div class="border-t border-gray-700 pt-4 mt-4">
-                <h3 class="text-sm font-semibold mb-2">💬 Chat with ADE</h3>
+                <h3 class="text-sm font-semibold mb-2">💬 Feedback</h3>
                 
-                <div class="space-y-2 mb-3 max-h-32 overflow-y-auto">
+                <div class="space-y-2 mb-3 max-h-24 overflow-y-auto">
                   <div
-                    v-for="chat in chatHistory"
+                    v-for="chat in chatHistory.slice(-2)"
                     :key="chat.timestamp"
                     :class="[
                       'p-2 rounded text-xs',
@@ -415,110 +378,153 @@
                   <input
                     v-model="userFeedback"
                     @keyup.enter="sendChatMessage"
-                    placeholder="Tell ADE your thoughts..."
+                    placeholder="How does this feel?"
                     class="flex-1 px-2 py-1 bg-gray-700 border border-gray-600 rounded-l text-xs text-white"
                   />
                   <button
                     @click="sendChatMessage"
                     class="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded-r text-xs text-white"
                   >
-                    Send
+                    💬
                   </button>
                 </div>
               </div>
             </div>
             
-            <!-- Center Panel: App Screen Mockup -->
-            <div class="w-1/2 bg-gray-900 p-4 overflow-y-auto">
-              <h2 class="text-lg font-semibold mb-4">App Screen Mockup</h2>
-              
-              <div v-if="!currentScreenData" class="text-center text-gray-400 mt-20">
-                <div class="text-6xl mb-4">📱</div>
-                <p>Select a screen to view its mockup</p>
-              </div>
-              
-              <div v-else class="space-y-4">
-                <!-- App Screen Mockup -->
-                <div class="bg-white rounded-lg p-6 max-w-md mx-auto" style="width: 300px; height: 500px;">
-                  <div class="text-center mb-4">
-                    <h3 class="text-lg font-bold text-gray-800">{{ currentScreenData.name }}</h3>
-                    <p class="text-sm text-gray-600">{{ currentScreenData.purpose }}</p>
-                    <div v-if="screenHistory.length > 0" class="mt-2">
-                      <button 
-                        @click="goBackToPreviousScreen"
-                        class="text-xs px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded"
-                      >
-                        ← Back to {{ screenHistory[screenHistory.length - 1]?.name }}
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <!-- Interactive Buttons -->
-                  <div class="space-y-3">
-                    <button
-                      v-for="button in getScreenButtons()"
-                      :key="button.id"
-                      @click="handleButtonClick(button)"
-                      :title="button.description"
-                      class="w-full p-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-left relative group"
-                    >
-                      <div class="text-sm font-medium">{{ button.label }}</div>
-                      <div class="text-xs opacity-75">Tap to trigger APML sequence</div>
-                      
-                      <!-- Hover tooltip -->
-                      <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-nowrap">
-                        {{ button.description }}
-                      </div>
-                    </button>
-                  </div>
-                  
-                  <!-- Screen Info -->
-                  <div class="mt-6 p-3 bg-gray-100 rounded text-xs text-gray-600">
-                    <div>Screen: {{ currentScreenData.id }}</div>
-                    <div>Actions: {{ getScreenButtons().length }}</div>
-                  </div>
+            <!-- Center Panel: App Simulator -->
+            <div :class="showTechnicalDetails ? 'w-1/2' : 'w-3/4'" class="bg-gray-900 p-4 overflow-y-auto transition-all duration-300">
+              <div class="flex justify-center">
+                <div v-if="!currentScreenData" class="text-center text-gray-400 mt-20">
+                  <div class="text-6xl mb-4">📱</div>
+                  <p>Loading ProjectChat...</p>
                 </div>
                 
-                <!-- Button Explanations -->
-                <div v-if="getScreenButtons().length > 0" class="max-w-md mx-auto p-3 bg-gray-800 rounded">
-                  <h4 class="text-sm font-semibold mb-2 text-gray-300">Available Actions:</h4>
-                  <div class="space-y-1">
-                    <div v-for="button in getScreenButtons()" :key="button.id" class="text-xs text-gray-400">
-                      <span class="font-medium text-blue-400">{{ button.label }}:</span> {{ button.description }}
+                <div v-else class="bg-white rounded-xl shadow-2xl" style="width: 320px; height: 560px; position: relative;">
+                  <!-- Phone Frame -->
+                  <div class="absolute inset-0 bg-black rounded-xl p-2">
+                    <div class="bg-white rounded-lg h-full flex flex-col">
+                      <!-- Status Bar -->
+                      <div class="flex justify-between items-center px-4 py-2 text-xs text-gray-600 bg-gray-50 rounded-t-lg">
+                        <span>9:41</span>
+                        <span class="font-semibold">ProjectChat</span>
+                        <span>🔋100%</span>
+                      </div>
+                      
+                      <!-- Screen Header -->
+                      <div class="px-4 py-3 border-b border-gray-200">
+                        <div class="flex items-center justify-between">
+                          <div>
+                            <h3 class="text-lg font-bold text-gray-800">{{ currentScreenData.name }}</h3>
+                            <p class="text-xs text-gray-500">{{ currentScreenData.purpose }}</p>
+                          </div>
+                          <div v-if="screenHistory.length > 0">
+                            <button 
+                              @click="goBackToPreviousScreen"
+                              class="text-blue-500 text-sm px-2 py-1 rounded hover:bg-blue-50"
+                            >
+                              ← Back
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <!-- Screen Content -->
+                      <div class="flex-1 p-4 overflow-y-auto">
+                        <div class="space-y-3">
+                          <button
+                            v-for="button in getScreenButtons()"
+                            :key="button.id"
+                            @click="handleButtonClick(button)"
+                            class="w-full p-4 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-left shadow-md"
+                          >
+                            <div class="text-sm font-medium">{{ button.label }}</div>
+                            <div class="text-xs opacity-75 mt-1">{{ button.description }}</div>
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <!-- Bottom Navigation (if main screen) -->
+                      <div v-if="['chat_screen', 'task_screen', 'file_screen', 'team_screen'].includes(currentScreenData.id)" class="border-t border-gray-200 bg-gray-50 px-4 py-2">
+                        <div class="flex justify-around">
+                          <button 
+                            v-for="screen in appScreens.filter(s => ['chat_screen', 'task_screen', 'file_screen', 'team_screen'].includes(s.id))"
+                            :key="screen.id"
+                            @click="loadScreen(screen)"
+                            :class="[
+                              'flex flex-col items-center py-2 px-3 rounded text-xs transition-colors',
+                              selectedScreen === screen.id 
+                                ? 'text-blue-600 bg-blue-50' 
+                                : 'text-gray-500 hover:text-gray-700'
+                            ]"
+                          >
+                            <div class="text-lg mb-1">
+                              {{ screen.id === 'chat_screen' ? '💬' : 
+                                  screen.id === 'task_screen' ? '✅' : 
+                                  screen.id === 'file_screen' ? '📁' : '👥' }}
+                            </div>
+                            <div>{{ screen.name.replace(' Screen', '') }}</div>
+                          </button>
+                        </div>
+                      </div>
                     </div>
                   </div>
                 </div>
               </div>
             </div>
             
-            <!-- Right Panel: APML Sequence -->
-            <div class="w-1/4 bg-gray-800 border-l border-gray-700 p-4 overflow-y-auto">
-              <h2 class="text-lg font-semibold mb-4">APML Sequence</h2>
+            <!-- Right Panel: Technical Details (Collapsible) -->
+            <div v-if="showTechnicalDetails" class="w-1/4 bg-gray-800 border-l border-gray-700 p-4 overflow-y-auto transition-all duration-300">
+              <h2 class="text-lg font-semibold mb-4">🔧 Technical Details</h2>
               
-              <div v-if="messageSequence.length > 0" class="space-y-2 mb-4">
-                <div
-                  v-for="message in messageSequence"
-                  :key="message.timestamp"
-                  :class="[
-                    'p-3 rounded text-sm',
-                    message.type === 'user-to-app' ? 'bg-green-900 text-green-100' :
-                    message.type === 'app-to-app' ? 'bg-purple-900 text-purple-100' :
-                    'bg-blue-900 text-blue-100'
-                  ]"
-                >
-                  <div class="font-medium mb-1">{{ message.type.replace('-', ' → ').toUpperCase() }}</div>
-                  <div>{{ message.content }}</div>
+              <div class="space-y-4">
+                <!-- APML Sequence -->
+                <div>
+                  <h3 class="text-sm font-medium mb-2 text-orange-400">APML Message Sequence</h3>
+                  <div v-if="messageSequence.length > 0" class="space-y-2">
+                    <div
+                      v-for="message in messageSequence"
+                      :key="message.timestamp"
+                      :class="[
+                        'p-2 rounded text-xs',
+                        message.type === 'user-to-app' ? 'bg-green-900 text-green-100' :
+                        message.type === 'app-to-app' ? 'bg-purple-900 text-purple-100' :
+                        'bg-blue-900 text-blue-100'
+                      ]"
+                    >
+                      <div class="font-medium">{{ message.type.replace('-', ' → ').toUpperCase() }}</div>
+                      <div>{{ message.content }}</div>
+                    </div>
+                  </div>
+                  <div v-else class="text-center text-gray-400 py-8">
+                    <div class="text-2xl mb-2">🔄</div>
+                    <p class="text-xs">Interact with app to see APML sequence</p>
+                  </div>
                 </div>
-              </div>
-              
-              <div v-else class="text-center text-gray-400 mt-20">
-                <div class="text-4xl mb-4">🔄</div>
-                <p class="text-sm">APML sequence will appear here when you interact with buttons in the center panel</p>
+                
+                <!-- Screen Data -->
+                <div v-if="currentScreenData" class="p-3 bg-gray-700 rounded">
+                  <h3 class="text-sm font-medium mb-2 text-blue-400">Current Screen Data</h3>
+                  <div class="text-xs text-gray-300 space-y-1">
+                    <div><strong>ID:</strong> {{ currentScreenData.id }}</div>
+                    <div><strong>Actions:</strong> {{ currentScreenData.actions?.length || 0 }}</div>
+                    <div><strong>Purpose:</strong> {{ currentScreenData.purpose }}</div>
+                  </div>
+                </div>
+                
+                <!-- App Patterns -->
+                <div v-if="currentApml?.patterns" class="p-3 bg-gray-700 rounded">
+                  <h3 class="text-sm font-medium mb-2 text-purple-400">APML Patterns</h3>
+                  <div class="text-xs text-gray-300 space-y-1">
+                    <div>User→App: {{ currentApml.patterns.user_to_app?.length || 0 }}</div>
+                    <div>App→App: {{ currentApml.patterns.app_to_app?.length || 0 }}</div>
+                    <div>App→User: {{ currentApml.patterns.app_to_user?.length || 0 }}</div>
+                  </div>
+                </div>
               </div>
               
               <div class="mt-6 p-3 bg-gray-900 rounded border border-gray-600">
                 <p class="text-xs text-gray-400">
-                  <strong>🎯 APML Validation:</strong> Click buttons in the center panel to see the exact sequence of User→App, App→App, and App→User messages that would be triggered.
+                  <strong>🎯 For Developers:</strong> This shows the underlying APML processing. Regular users don't need to see this - they just experience the app flow.
                 </p>
               </div>
             </div>
