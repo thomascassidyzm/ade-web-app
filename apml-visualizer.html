@@ -1,0 +1,354 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>APML Visualizer - Foundation Tool</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://unpkg.com/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  
+  <script>
+    const { createApp, ref, reactive, computed, onMounted } = Vue;
+    
+    createApp({
+      setup() {
+        const currentApml = ref(null);
+        const apmlContent = ref('');
+        const selectedFile = ref('');
+        const validationErrors = ref([]);
+        const selectedComponent = ref(null);
+        const viewportSize = ref('desktop');
+        
+        const availableApmlFiles = ref([
+          'master-app.apml',
+          'analyze-phase.apml', 
+          'visualize-layout.apml',
+          'eyetest-compare.apml',
+          'journey-timeline.apml',
+          'vue-compiler.apml',
+          'apml-visualizer.apml'
+        ]);
+        
+        const viewports = {
+          mobile: { width: 375, height: 667, label: 'Mobile' },
+          tablet: { width: 768, height: 1024, label: 'Tablet' },
+          desktop: { width: 1200, height: 800, label: 'Desktop' }
+        };
+        
+        const parseApml = (content) => {
+          try {
+            const parsed = jsyaml.load(content);
+            validationErrors.value = [];
+            return parsed;
+          } catch (error) {
+            validationErrors.value = [{ type: 'error', message: error.message }];
+            return null;
+          }
+        };
+        
+        const loadApmlFile = async (filename) => {
+          try {
+            const response = await fetch(`/vfs-storage/${filename}`);
+            if (!response.ok) throw new Error(`Failed to load ${filename}`);
+            const content = await response.text();
+            apmlContent.value = content;
+            currentApml.value = parseApml(content);
+            selectedFile.value = filename;
+          } catch (error) {
+            validationErrors.value = [{ type: 'error', message: `Failed to load ${filename}: ${error.message}` }];
+          }
+        };
+        
+        const generateWireframe = (apml) => {
+          if (!apml) return '';
+          
+          const viewport = viewports[viewportSize.value];
+          let wireframeElements = [];
+          
+          // Generate wireframe from APML layout
+          if (apml.layout) {
+            wireframeElements.push(generateLayoutWireframe(apml.layout, viewport));
+          }
+          
+          // Generate component wireframes
+          if (apml.components) {
+            Object.entries(apml.components).forEach(([name, component]) => {
+              wireframeElements.push(generateComponentWireframe(name, component, viewport));
+            });
+          }
+          
+          return wireframeElements.join('');
+        };
+        
+        const generateLayoutWireframe = (layout, viewport) => {
+          if (layout.type === 'three_panel_horizontal') {
+            return `
+              <g class="layout-container">
+                <rect x="10" y="10" width="${viewport.width-20}" height="60" fill="#f3f4f6" stroke="#d1d5db" rx="4"/>
+                <text x="20" y="35" font-size="14" fill="#374151">Header: ${layout.header?.title || 'Layout Header'}</text>
+                
+                <rect x="10" y="80" width="${(viewport.width-40)/3}" height="${viewport.height-120}" fill="#fef3c7" stroke="#f59e0b" rx="4"/>
+                <text x="20" y="100" font-size="12" fill="#92400e">Left Panel</text>
+                
+                <rect x="${20+(viewport.width-40)/3}" y="80" width="${(viewport.width-40)/3}" height="${viewport.height-120}" fill="#dbeafe" stroke="#3b82f6" rx="4"/>
+                <text x="${30+(viewport.width-40)/3}" y="100" font-size="12" fill="#1e40af">Center Panel</text>
+                
+                <rect x="${30+2*(viewport.width-40)/3}" y="80" width="${(viewport.width-40)/3}" height="${viewport.height-120}" fill="#dcfce7" stroke="#22c55e" rx="4"/>
+                <text x="${40+2*(viewport.width-40)/3}" y="100" font-size="12" fill="#166534">Right Panel</text>
+              </g>
+            `;
+          }
+          
+          if (layout.type === 'single_panel_mobile') {
+            return `
+              <g class="layout-container">
+                <rect x="10" y="10" width="${viewport.width-20}" height="${viewport.height-20}" fill="#f9fafb" stroke="#d1d5db" rx="8"/>
+                <text x="20" y="35" font-size="14" fill="#374151">Mobile Layout</text>
+              </g>
+            `;
+          }
+          
+          return `
+            <g class="layout-container">
+              <rect x="10" y="10" width="${viewport.width-20}" height="${viewport.height-20}" fill="#f3f4f6" stroke="#d1d5db" rx="4"/>
+              <text x="20" y="35" font-size="14" fill="#374151">Layout: ${layout.type || 'Unknown'}</text>
+            </g>
+          `;
+        };
+        
+        const generateComponentWireframe = (name, component, viewport) => {
+          const yOffset = 120 + Object.keys(currentApml.value.components || {}).indexOf(name) * 80;
+          
+          return `
+            <g class="component" data-component="${name}">
+              <rect x="20" y="${yOffset}" width="${viewport.width-40}" height="60" fill="#ffffff" stroke="#6b7280" rx="4" stroke-dasharray="2,2"/>
+              <text x="30" y="${yOffset + 20}" font-size="12" font-weight="bold" fill="#1f2937">${name}</text>
+              <text x="30" y="${yOffset + 35}" font-size="10" fill="#6b7280">${component.purpose || component.description || 'Component'}</text>
+              <text x="30" y="${yOffset + 50}" font-size="9" fill="#9ca3af">File: ${component.file || 'Not specified'}</text>
+            </g>
+          `;
+        };
+        
+        const extractPatterns = (apml) => {
+          if (!apml?.patterns) return [];
+          
+          const patterns = [];
+          Object.entries(apml.patterns).forEach(([type, items]) => {
+            if (Array.isArray(items)) {
+              items.forEach((item, index) => {
+                patterns.push({
+                  type,
+                  content: item,
+                  id: `${type}-${index}`
+                });
+              });
+            }
+          });
+          
+          return patterns;
+        };
+        
+        const validateApml = (apml) => {
+          const errors = [];
+          
+          if (!apml) {
+            errors.push({ type: 'error', message: 'Invalid APML structure' });
+            return errors;
+          }
+          
+          if (!apml.apml_version) {
+            errors.push({ type: 'warning', message: 'Missing apml_version' });
+          }
+          
+          if (!apml.metadata) {
+            errors.push({ type: 'error', message: 'Missing metadata section' });
+          } else {
+            if (!apml.metadata.title) {
+              errors.push({ type: 'warning', message: 'Missing metadata.title' });
+            }
+          }
+          
+          if (!apml.patterns && !apml.components && !apml.layout) {
+            errors.push({ type: 'warning', message: 'No patterns, components, or layout defined' });
+          }
+          
+          return errors;
+        };
+        
+        const highlightPattern = (pattern) => {
+          selectedComponent.value = pattern;
+        };
+        
+        onMounted(() => {
+          // Load the visualizer's own APML file first
+          loadApmlFile('apml-visualizer.apml');
+        });
+        
+        return {
+          currentApml,
+          apmlContent,
+          selectedFile,
+          validationErrors,
+          selectedComponent,
+          viewportSize,
+          availableApmlFiles,
+          viewports,
+          loadApmlFile,
+          generateWireframe,
+          extractPatterns,
+          validateApml,
+          highlightPattern
+        };
+      },
+      
+      template: `
+        <div class="min-h-screen bg-gray-900 text-white">
+          <!-- Header -->
+          <header class="bg-gray-800 border-b border-gray-700 p-4">
+            <div class="flex items-center justify-between">
+              <h1 class="text-xl font-bold">APML Visualizer - Foundation Tool</h1>
+              <div class="flex items-center space-x-4">
+                <select v-model="viewportSize" class="bg-gray-700 border border-gray-600 rounded px-3 py-1 text-sm">
+                  <option v-for="(viewport, key) in viewports" :key="key" :value="key">
+                    {{ viewport.label }} ({{ viewport.width }}×{{ viewport.height }})
+                  </option>
+                </select>
+              </div>
+            </div>
+          </header>
+          
+          <div class="flex h-screen">
+            <!-- Left Panel: APML Explorer -->
+            <div class="w-1/4 bg-gray-800 border-r border-gray-700 p-4 overflow-y-auto">
+              <h2 class="text-lg font-semibold mb-4">APML Explorer</h2>
+              
+              <div class="mb-4">
+                <h3 class="text-sm font-medium mb-2">Available Files:</h3>
+                <div class="space-y-1">
+                  <button
+                    v-for="file in availableApmlFiles"
+                    :key="file"
+                    @click="loadApmlFile(file)"
+                    :class="[
+                      'w-full text-left px-3 py-2 rounded text-sm',
+                      selectedFile === file 
+                        ? 'bg-blue-600 text-white' 
+                        : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                    ]"
+                  >
+                    {{ file }}
+                  </button>
+                </div>
+              </div>
+              
+              <div v-if="currentApml" class="mb-4">
+                <h3 class="text-sm font-medium mb-2">Components:</h3>
+                <div class="space-y-1">
+                  <div
+                    v-for="(component, name) in currentApml.components"
+                    :key="name"
+                    class="px-3 py-2 bg-gray-700 rounded text-sm cursor-pointer hover:bg-gray-600"
+                    @click="selectedComponent = { name, ...component }"
+                  >
+                    {{ name }}
+                  </div>
+                </div>
+              </div>
+              
+              <div v-if="currentApml && extractPatterns(currentApml).length > 0" class="mb-4">
+                <h3 class="text-sm font-medium mb-2">Patterns:</h3>
+                <div class="space-y-1">
+                  <div
+                    v-for="pattern in extractPatterns(currentApml)"
+                    :key="pattern.id"
+                    class="px-3 py-2 bg-gray-700 rounded text-sm cursor-pointer hover:bg-gray-600"
+                    @click="highlightPattern(pattern)"
+                  >
+                    <div class="font-medium">{{ pattern.type }}</div>
+                    <div class="text-xs text-gray-400 truncate">{{ pattern.content }}</div>
+                  </div>
+                </div>
+              </div>
+              
+              <div v-if="validateApml(currentApml).length > 0" class="mb-4">
+                <h3 class="text-sm font-medium mb-2">Validation:</h3>
+                <div class="space-y-1">
+                  <div
+                    v-for="error in validateApml(currentApml)"
+                    :key="error.message"
+                    :class="[
+                      'px-3 py-2 rounded text-sm',
+                      error.type === 'error' ? 'bg-red-600' : 'bg-yellow-600'
+                    ]"
+                  >
+                    {{ error.message }}
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Center Panel: Visual Preview -->
+            <div class="w-1/2 bg-gray-900 p-4 overflow-auto">
+              <h2 class="text-lg font-semibold mb-4">Visual Preview</h2>
+              
+              <div v-if="!currentApml" class="text-center text-gray-400 mt-20">
+                <div class="text-6xl mb-4">📄</div>
+                <p>Select an APML file to visualize</p>
+              </div>
+              
+              <div v-else class="bg-white rounded-lg p-4">
+                <svg 
+                  :width="viewports[viewportSize].width" 
+                  :height="viewports[viewportSize].height"
+                  class="border border-gray-300 rounded"
+                >
+                  <g v-html="generateWireframe(currentApml)"></g>
+                </svg>
+              </div>
+              
+              <div v-if="currentApml?.metadata" class="mt-4 p-4 bg-gray-800 rounded">
+                <h3 class="font-semibold mb-2">{{ currentApml.metadata.title }}</h3>
+                <p class="text-sm text-gray-300 mb-2">{{ currentApml.metadata.description }}</p>
+                <div class="text-xs text-gray-400">
+                  Type: {{ currentApml.metadata.type }} | 
+                  Version: {{ currentApml.apml_version }}
+                </div>
+              </div>
+            </div>
+            
+            <!-- Right Panel: APML Inspector -->
+            <div class="w-1/4 bg-gray-800 border-l border-gray-700 p-4 overflow-y-auto">
+              <h2 class="text-lg font-semibold mb-4">APML Inspector</h2>
+              
+              <div v-if="selectedComponent" class="mb-4 p-3 bg-gray-700 rounded">
+                <h3 class="font-medium mb-2">{{ selectedComponent.name || 'Pattern' }}</h3>
+                <pre class="text-xs text-gray-300 whitespace-pre-wrap">{{ JSON.stringify(selectedComponent, null, 2) }}</pre>
+              </div>
+              
+              <div v-if="apmlContent" class="mb-4">
+                <h3 class="text-sm font-medium mb-2">Raw APML:</h3>
+                <textarea 
+                  v-model="apmlContent"
+                  readonly
+                  class="w-full h-64 bg-gray-900 border border-gray-600 rounded p-2 text-xs font-mono text-gray-300"
+                ></textarea>
+              </div>
+              
+              <div class="text-xs text-gray-400">
+                <p>🎯 <strong>Bootstrap Test:</strong> This visualizer is viewing and validating APML specifications, including its own!</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      `
+    }).mount('#app');
+  </script>
+</body>
+</html>

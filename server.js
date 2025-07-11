@@ -14,6 +14,11 @@ app.get('/', (req, res) => {
   res.sendFile(path.join(__dirname, 'index.html'));
 });
 
+// Serve the APML Visualizer
+app.get('/visualizer', (req, res) => {
+  res.sendFile(path.join(__dirname, 'apml-visualizer.html'));
+});
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ADE is running', timestamp: new Date().toISOString() });
