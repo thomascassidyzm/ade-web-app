@@ -39,6 +39,8 @@
         
         const currentApp = ref('projectchat-app.apml');
         const appScreens = ref([]);
+        const screenHistory = ref([]);
+        const currentScreenIndex = ref(0);
         
         const loadApp = async (filename) => {
           try {
@@ -90,7 +92,8 @@
             id: `btn-${index}`,
             label: actionObj.action,
             description: actionObj.description,
-            action: actionObj.action
+            action: actionObj.action,
+            nextScreen: actionObj.next_screen
           }));
         };
         
@@ -107,9 +110,10 @@
             triggerAppProcesses(button);
           }, 500);
           
-          // Show final App → User result
+          // Show final App → User result and screen transition
           setTimeout(() => {
             showAppResponse(button);
+            transitionToNextScreen(button);
           }, 1500);
         };
         
@@ -139,6 +143,42 @@
             content: contextualResponse,
             timestamp: Date.now()
           });
+        };
+        
+        const transitionToNextScreen = (button) => {
+          if (button.nextScreen) {
+            // Find the next screen in appScreens
+            const nextScreen = appScreens.value.find(screen => screen.id === button.nextScreen);
+            if (nextScreen) {
+              // Add screen transition to APML sequence
+              messageSequence.value.push({
+                type: 'app-to-user',
+                content: `Screen transition: Navigate to ${nextScreen.name}`,
+                timestamp: Date.now()
+              });
+              
+              // Update screen history
+              screenHistory.value.push(currentScreenData.value);
+              
+              // Transition to next screen
+              currentScreenData.value = nextScreen;
+              selectedScreen.value = nextScreen.id;
+            }
+          }
+        };
+        
+        const goBackToPreviousScreen = () => {
+          if (screenHistory.value.length > 0) {
+            const previousScreen = screenHistory.value.pop();
+            currentScreenData.value = previousScreen;
+            selectedScreen.value = previousScreen.id;
+            
+            messageSequence.value.push({
+              type: 'app-to-user',
+              content: `Screen transition: Back to ${previousScreen.name}`,
+              timestamp: Date.now()
+            });
+          }
         };
         
         const sendChatMessage = () => {
@@ -187,8 +227,9 @@
         };
         
         const resetScreen = () => {
-          if (currentScreenData.value) {
-            initializeScreen();
+          screenHistory.value = [];
+          if (appScreens.value.length > 0) {
+            loadScreen(appScreens.value[0]);
           }
         };
         
@@ -213,6 +254,7 @@
           userFeedback,
           chatHistory,
           appScreens,
+          screenHistory,
           loadApp,
           loadScreen,
           getScreenButtons,
@@ -220,7 +262,9 @@
           sendChatMessage,
           clearMessageSequence,
           resetScreen,
-          getSequenceStats
+          getSequenceStats,
+          transitionToNextScreen,
+          goBackToPreviousScreen
         };
       },
       
@@ -232,13 +276,23 @@
               <h1 class="text-xl font-bold">App Screen Simulator</h1>
               <div class="flex items-center space-x-4">
                 <div class="text-sm text-gray-400">
-                  Screen: {{ currentScreenData?.name || 'None' }}
+                  <span v-if="screenHistory.length > 0">
+                    {{ screenHistory[screenHistory.length - 1]?.name }} → 
+                  </span>
+                  <span class="font-semibold">{{ currentScreenData?.name || 'None' }}</span>
                 </div>
+                <button 
+                  v-if="screenHistory.length > 0"
+                  @click="goBackToPreviousScreen"
+                  class="px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-sm"
+                >
+                  ← Back
+                </button>
                 <button 
                   @click="resetScreen"
                   class="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm"
                 >
-                  Reset Screen
+                  Reset
                 </button>
                 <button 
                   @click="clearMessageSequence"
@@ -257,21 +311,68 @@
               <div class="flex-1">
                 <h2 class="text-lg font-semibold mb-4">ProjectChat Screens</h2>
                 
-                <div class="space-y-2">
-                  <button
-                    v-for="screen in appScreens"
-                    :key="screen.id"
-                    @click="loadScreen(screen)"
-                    :class="[
-                      'w-full text-left px-3 py-2 rounded text-sm transition-colors',
-                      selectedScreen === screen.id 
-                        ? 'bg-blue-600 text-white' 
-                        : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
-                    ]"
-                  >
-                    <div class="font-medium">{{ screen.name }}</div>
-                    <div class="text-xs text-gray-400">{{ screen.actions?.length || 0 }} actions</div>
-                  </button>
+                <!-- Current Screen -->
+                <div v-if="currentScreenData" class="mb-4 p-3 bg-blue-900 rounded">
+                  <div class="font-medium text-blue-100">Current: {{ currentScreenData.name }}</div>
+                  <div class="text-xs text-blue-200">{{ currentScreenData.actions?.length || 0 }} actions available</div>
+                </div>
+                
+                <!-- Screen History -->
+                <div v-if="screenHistory.length > 0" class="mb-4">
+                  <h3 class="text-sm font-medium mb-2 text-gray-400">Screen History:</h3>
+                  <div class="space-y-1">
+                    <button
+                      v-for="(screen, index) in screenHistory.slice(-3)"
+                      :key="screen.id + '-' + index"
+                      @click="goBackToPreviousScreen"
+                      class="w-full text-left px-2 py-1 rounded text-xs bg-gray-700 hover:bg-gray-600 text-gray-300"
+                    >
+                      ← {{ screen.name }}
+                    </button>
+                  </div>
+                </div>
+                
+                <!-- Main Screens (organized by category) -->
+                <div class="space-y-4">
+                  <div>
+                    <h3 class="text-sm font-medium mb-2 text-green-400">Main Screens</h3>
+                    <div class="space-y-1">
+                      <button
+                        v-for="screen in appScreens.filter(s => ['chat_screen', 'task_screen', 'file_screen', 'team_screen'].includes(s.id))"
+                        :key="screen.id"
+                        @click="loadScreen(screen)"
+                        :class="[
+                          'w-full text-left px-3 py-2 rounded text-sm transition-colors',
+                          selectedScreen === screen.id 
+                            ? 'bg-green-600 text-white' 
+                            : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                        ]"
+                      >
+                        <div class="font-medium">{{ screen.name }}</div>
+                        <div class="text-xs text-gray-400">{{ screen.actions?.length || 0 }} actions</div>
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div v-if="appScreens.filter(s => !['chat_screen', 'task_screen', 'file_screen', 'team_screen'].includes(s.id)).length > 0">
+                    <h3 class="text-sm font-medium mb-2 text-purple-400">Flow Screens</h3>
+                    <div class="space-y-1">
+                      <button
+                        v-for="screen in appScreens.filter(s => !['chat_screen', 'task_screen', 'file_screen', 'team_screen'].includes(s.id))"
+                        :key="screen.id"
+                        @click="loadScreen(screen)"
+                        :class="[
+                          'w-full text-left px-3 py-2 rounded text-sm transition-colors',
+                          selectedScreen === screen.id 
+                            ? 'bg-purple-600 text-white' 
+                            : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+                        ]"
+                      >
+                        <div class="font-medium text-xs">{{ screen.name }}</div>
+                        <div class="text-xs text-gray-400">{{ screen.actions?.length || 0 }} actions</div>
+                      </button>
+                    </div>
+                  </div>
                 </div>
                 
                 <div v-if="currentScreenData" class="mt-6 p-3 bg-gray-700 rounded">
@@ -342,6 +443,14 @@
                   <div class="text-center mb-4">
                     <h3 class="text-lg font-bold text-gray-800">{{ currentScreenData.name }}</h3>
                     <p class="text-sm text-gray-600">{{ currentScreenData.purpose }}</p>
+                    <div v-if="screenHistory.length > 0" class="mt-2">
+                      <button 
+                        @click="goBackToPreviousScreen"
+                        class="text-xs px-2 py-1 bg-gray-200 hover:bg-gray-300 rounded"
+                      >
+                        ← Back to {{ screenHistory[screenHistory.length - 1]?.name }}
+                      </button>
+                    </div>
                   </div>
                   
                   <!-- Interactive Buttons -->

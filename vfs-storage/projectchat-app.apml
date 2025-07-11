@@ -90,14 +90,63 @@ screens:
     user_actions:
       - action: "Send message to team channel"
         description: "Type and send a message to the current project channel"
+        next_screen: "chat_screen_updated"
       - action: "Share document or file"
         description: "Upload and share files with the team"
+        next_screen: "file_upload_screen"
       - action: "Create new task from conversation"
         description: "Turn a message or discussion into an actionable task"
+        next_screen: "task_creation_screen"
       - action: "React to message with emoji"
         description: "Add emoji reactions to team messages"
+        next_screen: "chat_screen_updated"
       - action: "Search conversation history"
         description: "Find specific messages or discussions"
+        next_screen: "search_results_screen"
+    
+  chat_screen_updated:
+    name: "Chat Screen (Updated)"
+    purpose: "Chat screen showing the result of user action"
+    user_actions:
+      - action: "Send message to team channel"
+        description: "Send another message"
+        next_screen: "chat_screen_updated"
+      - action: "Share document or file"
+        description: "Share another file"
+        next_screen: "file_upload_screen"
+    
+  file_upload_screen:
+    name: "File Upload Screen"
+    purpose: "Screen for uploading and sharing files"
+    user_actions:
+      - action: "Confirm file upload"
+        description: "Complete the file upload process"
+        next_screen: "chat_screen_updated"
+      - action: "Cancel upload"
+        description: "Cancel and return to chat"
+        next_screen: "chat_screen"
+        
+  task_creation_screen:
+    name: "Task Creation Screen"
+    purpose: "Screen for creating new tasks"
+    user_actions:
+      - action: "Save new task"
+        description: "Create the task and assign it"
+        next_screen: "task_screen"
+      - action: "Cancel task creation"
+        description: "Cancel and return to chat"
+        next_screen: "chat_screen"
+        
+  search_results_screen:
+    name: "Search Results Screen"
+    purpose: "Display search results for messages or files"
+    user_actions:
+      - action: "Open message from results"
+        description: "View the full message or conversation"
+        next_screen: "chat_screen"
+      - action: "Start new search"
+        description: "Search for something else"
+        next_screen: "search_results_screen"
     
   task_screen:
     name: "Task Screen"
@@ -105,14 +154,63 @@ screens:
     user_actions:
       - action: "Mark task as completed"
         description: "Check off a finished task"
+        next_screen: "task_completion_screen"
       - action: "Create new task from conversation"
         description: "Add a new task to the project"
+        next_screen: "task_creation_screen"
       - action: "Set task deadline"
         description: "Assign a due date to a task"
+        next_screen: "task_detail_screen"
       - action: "Add team member to project"
         description: "Assign a task to a specific team member"
+        next_screen: "team_assignment_screen"
       - action: "Update project status"
         description: "Change overall project progress"
+        next_screen: "project_status_screen"
+        
+  task_completion_screen:
+    name: "Task Completion Screen"
+    purpose: "Celebration and confirmation of completed task"
+    user_actions:
+      - action: "View updated task list"
+        description: "See the task list with completed items"
+        next_screen: "task_screen"
+      - action: "Share completion with team"
+        description: "Notify team of completed task"
+        next_screen: "chat_screen_updated"
+        
+  task_detail_screen:
+    name: "Task Detail Screen"
+    purpose: "Detailed view and editing of a specific task"
+    user_actions:
+      - action: "Save task changes"
+        description: "Save deadline and other details"
+        next_screen: "task_screen"
+      - action: "Delete task"
+        description: "Remove this task"
+        next_screen: "task_screen"
+        
+  team_assignment_screen:
+    name: "Team Assignment Screen"
+    purpose: "Assign tasks to team members"
+    user_actions:
+      - action: "Confirm assignment"
+        description: "Assign task to selected team member"
+        next_screen: "task_screen"
+      - action: "Send notification to assignee"
+        description: "Notify the team member about the assignment"
+        next_screen: "chat_screen_updated"
+        
+  project_status_screen:
+    name: "Project Status Screen"
+    purpose: "Update overall project progress and milestones"
+    user_actions:
+      - action: "Save status update"
+        description: "Update project progress"
+        next_screen: "task_screen"
+      - action: "Share status with team"
+        description: "Announce progress to team"
+        next_screen: "chat_screen_updated"
         
   file_screen:
     name: "File Screen"
@@ -120,10 +218,13 @@ screens:
     user_actions:
       - action: "Share document or file"
         description: "Upload new files to the project"
+        next_screen: "file_upload_screen"
       - action: "Search conversation history"
         description: "Find specific files or documents"
+        next_screen: "search_results_screen"
       - action: "Send message to team channel"
         description: "Comment on a file or document"
+        next_screen: "chat_screen_updated"
         
   team_screen:
     name: "Team Screen"
@@ -131,10 +232,35 @@ screens:
     user_actions:
       - action: "Add team member to project"
         description: "Invite someone new to the project"
+        next_screen: "team_invitation_screen"
       - action: "Send message to team channel"
         description: "Send a direct message to a team member"
+        next_screen: "chat_screen_updated"
       - action: "Start new project channel"
         description: "Create a new project workspace"
+        next_screen: "channel_creation_screen"
+        
+  team_invitation_screen:
+    name: "Team Invitation Screen"
+    purpose: "Send invitations to new team members"
+    user_actions:
+      - action: "Send invitation"
+        description: "Invite the person to join the project"
+        next_screen: "team_screen"
+      - action: "Cancel invitation"
+        description: "Cancel and return to team screen"
+        next_screen: "team_screen"
+        
+  channel_creation_screen:
+    name: "Channel Creation Screen"
+    purpose: "Create new project channels or workspaces"
+    user_actions:
+      - action: "Create channel"
+        description: "Create the new project channel"
+        next_screen: "chat_screen"
+      - action: "Cancel creation"
+        description: "Cancel and return to team screen"
+        next_screen: "team_screen"
 
 user_journeys:
   new_message_flow:
