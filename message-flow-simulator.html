@@ -38,6 +38,7 @@
         const chatHistory = ref([]);
         
         const appScreens = ref([
+          { id: 'projectchat', name: 'ProjectChat App', file: 'projectchat-app.apml' },
           { id: 'home', name: 'Home Screen', file: 'master-app.apml' },
           { id: 'analyze', name: 'Analyze Phase', file: 'analyze-phase.apml' },
           { id: 'visualize', name: 'Visualize Layout', file: 'visualize-layout.apml' },
@@ -191,9 +192,9 @@
         };
         
         onMounted(() => {
-          // Load first screen by default
+          // Load ProjectChat screen by default (most intuitive example)
           if (appScreens.value.length > 0) {
-            loadScreen(appScreens.value[0]);
+            loadScreen(appScreens.value[0]); // ProjectChat is now first
           }
         });
         

@@ -1,0 +1,235 @@
+apml_version: 1.0
+metadata:
+  title: "ProjectChat - Simple Project Management Messaging"
+  author: "ADE Team"
+  type: "mobile_app"
+  purpose: "WhatsApp-style messaging with file sharing and task management"
+  description: "A simple, intuitive project management app that combines team messaging, file sharing, and basic task tracking"
+  created: "2025-07-11T10:30:00Z"
+  
+project_overview:
+  name: "ProjectChat"
+  description: "Team messaging app with project management features"
+  target_users: "Small teams, project managers, freelancers"
+  key_features:
+    - "Real-time team messaging"
+    - "File sharing and document management"
+    - "Simple task creation and tracking"
+    - "Project timeline view"
+    - "Team member status"
+
+core_concept:
+  "Like WhatsApp but for work - where every conversation can spawn tasks and share files seamlessly"
+
+patterns:
+  user_to_app:
+    - "Send message to team channel"
+    - "Share document or file"
+    - "Create new task from conversation"
+    - "Mark task as completed"
+    - "Add team member to project"
+    - "Set task deadline"
+    - "React to message with emoji"
+    - "Search conversation history"
+    - "Start new project channel"
+    - "Update project status"
+    
+  app_to_app:
+    - "Notify all team members of new message"
+    - "Upload file to secure cloud storage"
+    - "Update task status in project database"
+    - "Send push notification to relevant users"
+    - "Index conversation content for search"
+    - "Sync data across all user devices"
+    - "Generate project timeline update"
+    - "Log activity in project audit trail"
+    - "Update team member online status"
+    - "Backup conversation data"
+    
+  app_to_user:
+    - "Display new message in conversation thread"
+    - "Show file upload confirmation and preview"
+    - "Display updated task list with new status"
+    - "Send push notification: New message from [Name]"
+    - "Show typing indicator when teammate is writing"
+    - "Display project progress dashboard"
+    - "Show file download completed notification"
+    - "Display search results with message highlights"
+    - "Show new project channel created successfully"
+    - "Display team member joined project notification"
+
+layout:
+  type: "mobile_first_tabs"
+  navigation: "bottom_tabs"
+  
+  tabs:
+    chats:
+      name: "Chats"
+      icon: "💬"
+      content: "List of project channels and direct messages"
+      
+    files:
+      name: "Files"
+      icon: "📁"
+      content: "Shared documents and media organized by project"
+      
+    tasks:
+      name: "Tasks"
+      icon: "✅"
+      content: "Task list with status, assignees, and deadlines"
+      
+    team:
+      name: "Team"
+      icon: "👥"
+      content: "Team members, their status, and availability"
+
+screens:
+  chat_screen:
+    purpose: "Main conversation interface"
+    elements:
+      - "Message input field with file attachment button"
+      - "Conversation thread with timestamps"
+      - "Quick task creation button"
+      - "File preview thumbnails"
+      - "Team member typing indicators"
+      
+  task_screen:
+    purpose: "Task management and tracking"
+    elements:
+      - "Task list with checkboxes"
+      - "Add new task button"
+      - "Task details: assignee, deadline, priority"
+      - "Task status filters: All, Pending, Completed"
+      - "Progress bar for project completion"
+      
+  file_screen:
+    purpose: "File and document management"
+    elements:
+      - "File grid with thumbnails"
+      - "Upload new file button"
+      - "File search and filter options"
+      - "Recent files section"
+      - "Storage usage indicator"
+
+user_journeys:
+  new_message_flow:
+    trigger: "User wants to send message to team"
+    steps:
+      - "Open project channel"
+      - "Type message in input field"
+      - "Tap send button"
+      - "Message appears in conversation"
+      - "Team members receive notification"
+      
+  file_sharing_flow:
+    trigger: "User needs to share document"
+    steps:
+      - "Open conversation or files tab"
+      - "Tap attachment/upload button"
+      - "Select file from device"
+      - "Add optional message/description"
+      - "Confirm upload"
+      - "File appears in conversation and files tab"
+      
+  task_creation_flow:
+    trigger: "User identifies action item in conversation"
+    steps:
+      - "Long press on relevant message"
+      - "Select 'Create Task' option"
+      - "Add task title and details"
+      - "Assign to team member"
+      - "Set deadline (optional)"
+      - "Save task"
+      - "Task appears in tasks tab and notifies assignee"
+
+interactions:
+  message_with_task_creation:
+    scenario: "Team discussing project deadline, needs to create task"
+    user_action: "Long press message about deadline"
+    app_process: "Extract context from message for task creation"
+    app_response: "Show task creation form pre-filled with context"
+    
+  file_share_in_conversation:
+    scenario: "User shares project specification document"
+    user_action: "Tap paperclip icon, select PDF file"
+    app_process: "Upload file, generate preview, notify team"
+    app_response: "Show file card in conversation with download button"
+    
+  task_completion_celebration:
+    scenario: "Team member completes important milestone task"
+    user_action: "Check off completed task"
+    app_process: "Update project progress, notify team"
+    app_response: "Show confetti animation and progress update"
+
+technical_features:
+  real_time_sync:
+    - "WebSocket connections for instant messaging"
+    - "Offline message queue with sync on reconnect"
+    - "Live typing indicators and read receipts"
+    
+  file_management:
+    - "Drag and drop file uploads"
+    - "Auto-generate previews for images and PDFs"
+    - "Version control for document updates"
+    
+  search_and_organization:
+    - "Full-text search across messages and files"
+    - "Smart categorization by project and date"
+    - "Quick filters for tasks and file types"
+
+success_metrics:
+  user_engagement:
+    - "Daily active users in team channels"
+    - "Average messages per project per day"
+    - "File sharing frequency"
+    - "Task completion rate"
+    
+  productivity_indicators:
+    - "Time from task creation to completion"
+    - "Reduction in email usage for project communication"
+    - "Number of project milestones achieved on time"
+
+sample_conversation_flow:
+  context: "Design team working on mobile app prototype"
+  
+  sequence:
+    - type: "app_to_user"
+      content: "Good morning! Welcome to the Mobile App Design project channel"
+      
+    - type: "user_to_app" 
+      content: "Share document or file"
+      
+    - type: "app_to_app"
+      content: "Upload file to secure cloud storage"
+      
+    - type: "app_to_user"
+      content: "File 'wireframes-v2.sketch' uploaded successfully and available to team"
+      
+    - type: "user_to_app"
+      content: "Create new task from conversation"
+      
+    - type: "app_to_app"
+      content: "Update task status in project database"
+      
+    - type: "app_to_user"
+      content: "Task 'Review wireframes v2' created and assigned to @sarah"
+
+validation_scenarios:
+  basic_messaging:
+    description: "Team members can send and receive messages instantly"
+    test_actions: ["Send message", "React with emoji", "Search messages"]
+    
+  file_collaboration:
+    description: "Easy sharing and organization of project files"
+    test_actions: ["Upload document", "Download file", "Search files"]
+    
+  task_management:
+    description: "Simple task creation and tracking from conversations"
+    test_actions: ["Create task", "Mark complete", "Set deadline"]
+    
+  team_coordination:
+    description: "Keep team informed and aligned on project progress"
+    test_actions: ["Add team member", "Update status", "View timeline"]
+
+implementation_notes:
+  "This APML represents a familiar, intuitive app concept that everyone can understand. The patterns are straightforward and mirror real-world team communication workflows. Perfect for demonstrating APML sequence flows in the simulator."
