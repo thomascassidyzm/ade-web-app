@@ -85,31 +85,56 @@ layout:
 
 screens:
   chat_screen:
+    name: "Chat Screen"
     purpose: "Main conversation interface"
-    elements:
-      - "Message input field with file attachment button"
-      - "Conversation thread with timestamps"
-      - "Quick task creation button"
-      - "File preview thumbnails"
-      - "Team member typing indicators"
-      
+    user_actions:
+      - action: "Send message to team channel"
+        description: "Type and send a message to the current project channel"
+      - action: "Share document or file"
+        description: "Upload and share files with the team"
+      - action: "Create new task from conversation"
+        description: "Turn a message or discussion into an actionable task"
+      - action: "React to message with emoji"
+        description: "Add emoji reactions to team messages"
+      - action: "Search conversation history"
+        description: "Find specific messages or discussions"
+    
   task_screen:
+    name: "Task Screen"
     purpose: "Task management and tracking"
-    elements:
-      - "Task list with checkboxes"
-      - "Add new task button"
-      - "Task details: assignee, deadline, priority"
-      - "Task status filters: All, Pending, Completed"
-      - "Progress bar for project completion"
-      
+    user_actions:
+      - action: "Mark task as completed"
+        description: "Check off a finished task"
+      - action: "Create new task from conversation"
+        description: "Add a new task to the project"
+      - action: "Set task deadline"
+        description: "Assign a due date to a task"
+      - action: "Add team member to project"
+        description: "Assign a task to a specific team member"
+      - action: "Update project status"
+        description: "Change overall project progress"
+        
   file_screen:
+    name: "File Screen"
     purpose: "File and document management"
-    elements:
-      - "File grid with thumbnails"
-      - "Upload new file button"
-      - "File search and filter options"
-      - "Recent files section"
-      - "Storage usage indicator"
+    user_actions:
+      - action: "Share document or file"
+        description: "Upload new files to the project"
+      - action: "Search conversation history"
+        description: "Find specific files or documents"
+      - action: "Send message to team channel"
+        description: "Comment on a file or document"
+        
+  team_screen:
+    name: "Team Screen"
+    purpose: "Team member management and status"
+    user_actions:
+      - action: "Add team member to project"
+        description: "Invite someone new to the project"
+      - action: "Send message to team channel"
+        description: "Send a direct message to a team member"
+      - action: "Start new project channel"
+        description: "Create a new project workspace"
 
 user_journeys:
   new_message_flow:

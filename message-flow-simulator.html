@@ -37,51 +37,60 @@
         const userFeedback = ref('');
         const chatHistory = ref([]);
         
-        const appScreens = ref([
-          { id: 'projectchat', name: 'ProjectChat App', file: 'projectchat-app.apml' },
-          { id: 'home', name: 'Home Screen', file: 'master-app.apml' },
-          { id: 'analyze', name: 'Analyze Phase', file: 'analyze-phase.apml' },
-          { id: 'visualize', name: 'Visualize Layout', file: 'visualize-layout.apml' },
-          { id: 'eyetest', name: 'Eye Test Compare', file: 'eyetest-compare.apml' },
-          { id: 'journey', name: 'Journey Timeline', file: 'journey-timeline.apml' },
-          { id: 'compiler', name: 'Vue Compiler', file: 'vue-compiler.apml' },
-          { id: 'visualizer', name: 'APML Visualizer', file: 'apml-visualizer.apml' }
-        ]);
+        const currentApp = ref('projectchat-app.apml');
+        const appScreens = ref([]);
         
-        const loadScreen = async (screen) => {
+        const loadApp = async (filename) => {
           try {
-            const response = await fetch(`/vfs-storage/${screen.file}`);
-            if (!response.ok) throw new Error(`Failed to load ${screen.file}`);
+            const response = await fetch(`/vfs-storage/${filename}`);
+            if (!response.ok) throw new Error(`Failed to load ${filename}`);
             const content = await response.text();
             currentApml.value = jsyaml.load(content);
-            selectedScreen.value = screen.id;
-            currentScreenData.value = screen;
-            initializeScreen();
+            
+            // Extract screens from APML
+            if (currentApml.value?.screens) {
+              appScreens.value = Object.entries(currentApml.value.screens).map(([key, screen]) => ({
+                id: key,
+                name: screen.name || key,
+                purpose: screen.purpose,
+                actions: screen.user_actions || []
+              }));
+              
+              // Load first screen by default
+              if (appScreens.value.length > 0) {
+                loadScreen(appScreens.value[0]);
+              }
+            }
           } catch (error) {
-            console.error('Failed to load screen:', error);
+            console.error('Failed to load app:', error);
           }
+        };
+        
+        const loadScreen = (screen) => {
+          selectedScreen.value = screen.id;
+          currentScreenData.value = screen;
+          initializeScreen();
         };
         
         const initializeScreen = () => {
           messageSequence.value = [];
           
           // Show initial screen load sequence
-          if (currentApml.value?.patterns?.app_to_user) {
-            messageSequence.value.push({
-              type: 'app-to-user',
-              content: `Screen loaded: ${currentScreenData.value?.name}`,
-              timestamp: Date.now()
-            });
-          }
+          messageSequence.value.push({
+            type: 'app-to-user',
+            content: `Screen loaded: ${currentScreenData.value?.name}`,
+            timestamp: Date.now()
+          });
         };
         
         const getScreenButtons = () => {
-          if (!currentApml.value?.patterns?.user_to_app) return [];
+          if (!currentScreenData.value?.actions) return [];
           
-          return currentApml.value.patterns.user_to_app.map((action, index) => ({
+          return currentScreenData.value.actions.map((actionObj, index) => ({
             id: `btn-${index}`,
-            label: action,
-            action: action
+            label: actionObj.action,
+            description: actionObj.description,
+            action: actionObj.action
           }));
         };
         
@@ -192,10 +201,8 @@
         };
         
         onMounted(() => {
-          // Load ProjectChat screen by default (most intuitive example)
-          if (appScreens.value.length > 0) {
-            loadScreen(appScreens.value[0]); // ProjectChat is now first
-          }
+          // Load ProjectChat app by default
+          loadApp('projectchat-app.apml');
         });
         
         return {
@@ -203,10 +210,10 @@
           selectedScreen,
           currentScreenData,
           messageSequence,
-          availableScreens,
           userFeedback,
           chatHistory,
           appScreens,
+          loadApp,
           loadScreen,
           getScreenButtons,
           handleButtonClick,
@@ -248,7 +255,7 @@
             <div class="w-1/4 bg-gray-800 border-r border-gray-700 p-4 overflow-y-auto flex flex-col">
               <!-- App Screens Section -->
               <div class="flex-1">
-                <h2 class="text-lg font-semibold mb-4">App Screens</h2>
+                <h2 class="text-lg font-semibold mb-4">ProjectChat Screens</h2>
                 
                 <div class="space-y-2">
                   <button
@@ -263,16 +270,15 @@
                     ]"
                   >
                     <div class="font-medium">{{ screen.name }}</div>
-                    <div class="text-xs text-gray-400">{{ screen.id }}</div>
+                    <div class="text-xs text-gray-400">{{ screen.actions?.length || 0 }} actions</div>
                   </button>
                 </div>
                 
-                <div v-if="currentApml" class="mt-6 p-3 bg-gray-700 rounded">
-                  <h3 class="font-medium mb-2">{{ currentApml.metadata?.title }}</h3>
-                  <div class="text-xs text-gray-400 space-y-1">
-                    <div>App→User: {{ currentApml.patterns?.app_to_user?.length || 0 }} messages</div>
-                    <div>User→App: {{ currentApml.patterns?.user_to_app?.length || 0 }} actions</div>
-                    <div>App→App: {{ currentApml.patterns?.app_to_app?.length || 0 }} processes</div>
+                <div v-if="currentScreenData" class="mt-6 p-3 bg-gray-700 rounded">
+                  <h3 class="font-medium mb-2">{{ currentScreenData.name }}</h3>
+                  <div class="text-xs text-gray-400">
+                    <div>{{ currentScreenData.purpose }}</div>
+                    <div class="mt-2">{{ currentScreenData.actions?.length || 0 }} user actions available</div>
                   </div>
                 </div>
                 
@@ -325,17 +331,17 @@
             <div class="w-1/2 bg-gray-900 p-4 overflow-y-auto">
               <h2 class="text-lg font-semibold mb-4">App Screen Mockup</h2>
               
-              <div v-if="!currentApml" class="text-center text-gray-400 mt-20">
+              <div v-if="!currentScreenData" class="text-center text-gray-400 mt-20">
                 <div class="text-6xl mb-4">📱</div>
-                <p>Select an app screen to simulate interactions</p>
+                <p>Select a screen to view its mockup</p>
               </div>
               
               <div v-else class="space-y-4">
                 <!-- App Screen Mockup -->
                 <div class="bg-white rounded-lg p-6 max-w-md mx-auto" style="width: 300px; height: 500px;">
                   <div class="text-center mb-4">
-                    <h3 class="text-lg font-bold text-gray-800">{{ currentScreenData?.name }}</h3>
-                    <p class="text-sm text-gray-600">{{ currentApml.metadata?.title }}</p>
+                    <h3 class="text-lg font-bold text-gray-800">{{ currentScreenData.name }}</h3>
+                    <p class="text-sm text-gray-600">{{ currentScreenData.purpose }}</p>
                   </div>
                   
                   <!-- Interactive Buttons -->
@@ -344,17 +350,33 @@
                       v-for="button in getScreenButtons()"
                       :key="button.id"
                       @click="handleButtonClick(button)"
-                      class="w-full p-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-left"
+                      :title="button.description"
+                      class="w-full p-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-left relative group"
                     >
                       <div class="text-sm font-medium">{{ button.label }}</div>
                       <div class="text-xs opacity-75">Tap to trigger APML sequence</div>
+                      
+                      <!-- Hover tooltip -->
+                      <div class="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-2 px-3 py-2 bg-gray-800 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity z-10 whitespace-nowrap">
+                        {{ button.description }}
+                      </div>
                     </button>
                   </div>
                   
                   <!-- Screen Info -->
                   <div class="mt-6 p-3 bg-gray-100 rounded text-xs text-gray-600">
-                    <div>Screen: {{ currentScreenData?.id }}</div>
+                    <div>Screen: {{ currentScreenData.id }}</div>
                     <div>Actions: {{ getScreenButtons().length }}</div>
+                  </div>
+                </div>
+                
+                <!-- Button Explanations -->
+                <div v-if="getScreenButtons().length > 0" class="max-w-md mx-auto p-3 bg-gray-800 rounded">
+                  <h4 class="text-sm font-semibold mb-2 text-gray-300">Available Actions:</h4>
+                  <div class="space-y-1">
+                    <div v-for="button in getScreenButtons()" :key="button.id" class="text-xs text-gray-400">
+                      <span class="font-medium text-blue-400">{{ button.label }}:</span> {{ button.description }}
+                    </div>
                   </div>
                 </div>
               </div>
@@ -380,59 +402,14 @@
                 </div>
               </div>
               
-              <div v-if="currentApml?.patterns" class="space-y-4">
-                <div class="p-3 bg-gray-700 rounded">
-                  <h4 class="font-medium mb-2 text-blue-400">Available Patterns</h4>
-                  <div class="text-sm text-gray-400">
-                    <div>User Actions: {{ currentApml.patterns.user_to_app?.length || 0 }}</div>
-                    <div>App Processes: {{ currentApml.patterns.app_to_app?.length || 0 }}</div>
-                    <div>App Responses: {{ currentApml.patterns.app_to_user?.length || 0 }}</div>
-                  </div>
-                </div>
-                
-                <div class="p-3 bg-gray-700 rounded">
-                  <h4 class="font-medium mb-2 text-green-400">User → App Actions</h4>
-                  <div class="space-y-1 text-xs">
-                    <div
-                      v-for="(action, index) in currentApml.patterns.user_to_app || []"
-                      :key="index"
-                      class="p-2 bg-green-900 rounded text-green-100"
-                    >
-                      {{ action }}
-                    </div>
-                  </div>
-                </div>
-                
-                <div class="p-3 bg-gray-700 rounded">
-                  <h4 class="font-medium mb-2 text-purple-400">App → App Processes</h4>
-                  <div class="space-y-1 text-xs">
-                    <div
-                      v-for="(process, index) in currentApml.patterns.app_to_app || []"
-                      :key="index"
-                      class="p-2 bg-purple-900 rounded text-purple-100"
-                    >
-                      {{ process }}
-                    </div>
-                  </div>
-                </div>
-                
-                <div class="p-3 bg-gray-700 rounded">
-                  <h4 class="font-medium mb-2 text-blue-400">App → User Messages</h4>
-                  <div class="space-y-1 text-xs">
-                    <div
-                      v-for="(message, index) in currentApml.patterns.app_to_user || []"
-                      :key="index"
-                      class="p-2 bg-blue-900 rounded text-blue-100"
-                    >
-                      {{ message }}
-                    </div>
-                  </div>
-                </div>
+              <div v-else class="text-center text-gray-400 mt-20">
+                <div class="text-4xl mb-4">🔄</div>
+                <p class="text-sm">APML sequence will appear here when you interact with buttons in the center panel</p>
               </div>
               
               <div class="mt-6 p-3 bg-gray-900 rounded border border-gray-600">
                 <p class="text-xs text-gray-400">
-                  <strong>🎯 APML Validation:</strong> The sequence above shows the exact flow triggered by button interactions. Each step represents the APML pattern execution.
+                  <strong>🎯 APML Validation:</strong> Click buttons in the center panel to see the exact sequence of User→App, App→App, and App→User messages that would be triggered.
                 </p>
               </div>
             </div>
