@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Message Flow Simulator - Validate Pure Interactions</title>
+  <title>App Screen Simulator - Interactive APML Validation</title>
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
   <script src="https://unpkg.com/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
@@ -30,137 +30,126 @@
     createApp({
       setup() {
         const currentApml = ref(null);
-        const selectedFile = ref('');
-        const currentScreen = ref('initial');
-        const messageHistory = ref([]);
-        const availableActions = ref([]);
-        const backgroundProcesses = ref([]);
+        const selectedScreen = ref('');
+        const currentScreenData = ref(null);
+        const messageSequence = ref([]);
+        const availableScreens = ref([]);
+        const userFeedback = ref('');
+        const chatHistory = ref([]);
         
-        const availableApmlFiles = ref([
-          'master-app.apml',
-          'analyze-phase.apml', 
-          'visualize-layout.apml',
-          'eyetest-compare.apml',
-          'journey-timeline.apml',
-          'vue-compiler.apml',
-          'apml-visualizer.apml'
+        const appScreens = ref([
+          { id: 'home', name: 'Home Screen', file: 'master-app.apml' },
+          { id: 'analyze', name: 'Analyze Phase', file: 'analyze-phase.apml' },
+          { id: 'visualize', name: 'Visualize Layout', file: 'visualize-layout.apml' },
+          { id: 'eyetest', name: 'Eye Test Compare', file: 'eyetest-compare.apml' },
+          { id: 'journey', name: 'Journey Timeline', file: 'journey-timeline.apml' },
+          { id: 'compiler', name: 'Vue Compiler', file: 'vue-compiler.apml' },
+          { id: 'visualizer', name: 'APML Visualizer', file: 'apml-visualizer.apml' }
         ]);
         
-        const loadApmlFile = async (filename) => {
+        const loadScreen = async (screen) => {
           try {
-            const response = await fetch(`/vfs-storage/${filename}`);
-            if (!response.ok) throw new Error(`Failed to load ${filename}`);
+            const response = await fetch(`/vfs-storage/${screen.file}`);
+            if (!response.ok) throw new Error(`Failed to load ${screen.file}`);
             const content = await response.text();
             currentApml.value = jsyaml.load(content);
-            selectedFile.value = filename;
-            initializeFlow();
+            selectedScreen.value = screen.id;
+            currentScreenData.value = screen;
+            initializeScreen();
           } catch (error) {
-            console.error('Failed to load APML:', error);
+            console.error('Failed to load screen:', error);
           }
         };
         
-        const initializeFlow = () => {
-          currentScreen.value = 'initial';
-          messageHistory.value = [];
-          backgroundProcesses.value = [];
+        const initializeScreen = () => {
+          messageSequence.value = [];
           
-          // Generate initial app-to-user message
+          // Show initial screen load sequence
           if (currentApml.value?.patterns?.app_to_user) {
-            const initialMessage = {
+            messageSequence.value.push({
               type: 'app-to-user',
-              content: getInitialMessage(),
-              timestamp: Date.now(),
-              screen: 'initial'
-            };
-            messageHistory.value.push(initialMessage);
+              content: `Screen loaded: ${currentScreenData.value?.name}`,
+              timestamp: Date.now()
+            });
           }
-          
-          // Generate available user actions
-          generateUserActions();
         };
         
-        const getInitialMessage = () => {
-          const appToUser = currentApml.value?.patterns?.app_to_user;
-          if (Array.isArray(appToUser) && appToUser.length > 0) {
-            return appToUser[0];
-          }
-          return `Welcome to ${currentApml.value?.metadata?.title || 'the app'}`;
-        };
-        
-        const generateUserActions = () => {
-          const userToApp = currentApml.value?.patterns?.user_to_app;
-          if (!userToApp) {
-            availableActions.value = [];
-            return;
-          }
+        const getScreenButtons = () => {
+          if (!currentApml.value?.patterns?.user_to_app) return [];
           
-          availableActions.value = userToApp.map((action, index) => ({
-            id: `action-${index}`,
-            content: action,
-            type: 'user-to-app'
+          return currentApml.value.patterns.user_to_app.map((action, index) => ({
+            id: `btn-${index}`,
+            label: action,
+            action: action
           }));
         };
         
-        const executeUserAction = (action) => {
-          // Add user action to history
-          messageHistory.value.push({
+        const handleButtonClick = (button) => {
+          // Start APML sequence: User → App
+          messageSequence.value.push({
             type: 'user-to-app',
-            content: action.content,
-            timestamp: Date.now(),
-            screen: currentScreen.value
+            content: button.action,
+            timestamp: Date.now()
           });
           
-          // Trigger background processes
-          triggerBackgroundProcesses(action);
-          
-          // Generate next app response
+          // Trigger App → App processes
           setTimeout(() => {
-            generateAppResponse(action);
-          }, 800);
+            triggerAppProcesses(button);
+          }, 500);
+          
+          // Show final App → User result
+          setTimeout(() => {
+            showAppResponse(button);
+          }, 1500);
         };
         
-        const triggerBackgroundProcesses = (action) => {
-          const appToApp = currentApml.value?.patterns?.app_to_app;
-          if (!appToApp) return;
+        const triggerAppProcesses = (button) => {
+          if (!currentApml.value?.patterns?.app_to_app) return;
           
-          // Show background processing
-          const process = {
-            id: `process-${Date.now()}`,
-            content: appToApp[Math.floor(Math.random() * appToApp.length)],
-            status: 'processing'
-          };
-          
-          backgroundProcesses.value.push(process);
-          
-          // Complete process after delay
-          setTimeout(() => {
-            process.status = 'completed';
+          const processes = currentApml.value.patterns.app_to_app;
+          processes.forEach((process, index) => {
             setTimeout(() => {
-              backgroundProcesses.value = backgroundProcesses.value.filter(p => p.id !== process.id);
-            }, 1000);
-          }, 600);
+              messageSequence.value.push({
+                type: 'app-to-app',
+                content: process,
+                timestamp: Date.now()
+              });
+            }, index * 300);
+          });
         };
         
-        const generateAppResponse = (userAction) => {
-          const appToUser = currentApml.value?.patterns?.app_to_user;
-          if (!appToUser) return;
+        const showAppResponse = (button) => {
+          if (!currentApml.value?.patterns?.app_to_user) return;
           
-          // Generate contextual response based on user action
-          let response = getContextualResponse(userAction.content, appToUser);
+          const responses = currentApml.value.patterns.app_to_user;
+          const contextualResponse = getContextualResponse(button.action, responses);
           
-          // Add app response to history
-          messageHistory.value.push({
+          messageSequence.value.push({
             type: 'app-to-user',
-            content: response,
-            timestamp: Date.now(),
-            screen: currentScreen.value
+            content: contextualResponse,
+            timestamp: Date.now()
+          });
+        };
+        
+        const sendChatMessage = () => {
+          if (!userFeedback.value.trim()) return;
+          
+          chatHistory.value.push({
+            type: 'user',
+            content: userFeedback.value,
+            timestamp: Date.now()
           });
           
-          // Update screen state
-          currentScreen.value = `screen-${messageHistory.value.length}`;
+          // Simulate ADE response
+          setTimeout(() => {
+            chatHistory.value.push({
+              type: 'ade',
+              content: `Thanks for the feedback about: "${userFeedback.value}". I'll incorporate this into the APML validation.`,
+              timestamp: Date.now()
+            });
+          }, 1000);
           
-          // Generate new user actions for this state
-          generateContextualActions(response);
+          userFeedback.value = '';
         };
         
         const getContextualResponse = (userAction, appResponses) => {
@@ -183,67 +172,47 @@
           return appResponses[Math.floor(Math.random() * appResponses.length)];
         };
         
-        const generateContextualActions = (appResponse) => {
-          const userToApp = currentApml.value?.patterns?.user_to_app;
-          if (!userToApp) return;
-          
-          // Generate actions based on app response
-          const response = appResponse.toLowerCase();
-          let contextualActions = [];
-          
-          if (response.includes('generated') || response.includes('display')) {
-            contextualActions = userToApp.filter(action => 
-              action.includes('select') || action.includes('preferences') || action.includes('confirm')
-            );
-          } else if (response.includes('deployment') || response.includes('options')) {
-            contextualActions = userToApp.filter(action => 
-              action.includes('confirm') || action.includes('deploy') || action.includes('cancel')
-            );
-          }
-          
-          // Fallback to all actions if no contextual match
-          if (contextualActions.length === 0) {
-            contextualActions = userToApp;
-          }
-          
-          availableActions.value = contextualActions.map((action, index) => ({
-            id: `action-${Date.now()}-${index}`,
-            content: action,
-            type: 'user-to-app'
-          }));
+        const clearMessageSequence = () => {
+          messageSequence.value = [];
         };
         
-        const resetFlow = () => {
-          initializeFlow();
+        const resetScreen = () => {
+          if (currentScreenData.value) {
+            initializeScreen();
+          }
         };
         
-        const getFlowStats = () => {
-          const appToUser = messageHistory.value.filter(m => m.type === 'app-to-user').length;
-          const userToApp = messageHistory.value.filter(m => m.type === 'user-to-app').length;
-          const appToApp = currentApml.value?.patterns?.app_to_app?.length || 0;
+        const getSequenceStats = () => {
+          const userToApp = messageSequence.value.filter(m => m.type === 'user-to-app').length;
+          const appToApp = messageSequence.value.filter(m => m.type === 'app-to-app').length;
+          const appToUser = messageSequence.value.filter(m => m.type === 'app-to-user').length;
           
-          return { appToUser, userToApp, appToApp };
+          return { userToApp, appToApp, appToUser };
         };
         
         onMounted(() => {
-          // Load first file by default
-          if (availableApmlFiles.value.length > 0) {
-            loadApmlFile(availableApmlFiles.value[0]);
+          // Load first screen by default
+          if (appScreens.value.length > 0) {
+            loadScreen(appScreens.value[0]);
           }
         });
         
         return {
           currentApml,
-          selectedFile,
-          currentScreen,
-          messageHistory,
-          availableActions,
-          backgroundProcesses,
-          availableApmlFiles,
-          loadApmlFile,
-          executeUserAction,
-          resetFlow,
-          getFlowStats
+          selectedScreen,
+          currentScreenData,
+          messageSequence,
+          availableScreens,
+          userFeedback,
+          chatHistory,
+          appScreens,
+          loadScreen,
+          getScreenButtons,
+          handleButtonClick,
+          sendChatMessage,
+          clearMessageSequence,
+          resetScreen,
+          getSequenceStats
         };
       },
       
@@ -252,39 +221,46 @@
           <!-- Header -->
           <header class="bg-gray-800 border-b border-gray-700 p-4">
             <div class="flex items-center justify-between">
-              <h1 class="text-xl font-bold">Message Flow Simulator</h1>
+              <h1 class="text-xl font-bold">App Screen Simulator</h1>
               <div class="flex items-center space-x-4">
                 <div class="text-sm text-gray-400">
-                  Screen: {{ currentScreen }}
+                  Screen: {{ currentScreenData?.name || 'None' }}
                 </div>
                 <button 
-                  @click="resetFlow"
+                  @click="resetScreen"
                   class="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded text-sm"
                 >
-                  Reset Flow
+                  Reset Screen
+                </button>
+                <button 
+                  @click="clearMessageSequence"
+                  class="px-3 py-1 bg-purple-600 hover:bg-purple-700 rounded text-sm"
+                >
+                  Clear Sequence
                 </button>
               </div>
             </div>
           </header>
           
           <div class="flex h-screen">
-            <!-- Left Panel: APML Files -->
+            <!-- Left Panel: App Screens -->
             <div class="w-1/4 bg-gray-800 border-r border-gray-700 p-4 overflow-y-auto">
-              <h2 class="text-lg font-semibold mb-4">APML Files</h2>
+              <h2 class="text-lg font-semibold mb-4">App Screens</h2>
               
               <div class="space-y-2">
                 <button
-                  v-for="file in availableApmlFiles"
-                  :key="file"
-                  @click="loadApmlFile(file)"
+                  v-for="screen in appScreens"
+                  :key="screen.id"
+                  @click="loadScreen(screen)"
                   :class="[
                     'w-full text-left px-3 py-2 rounded text-sm transition-colors',
-                    selectedFile === file 
+                    selectedScreen === screen.id 
                       ? 'bg-blue-600 text-white' 
                       : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
                   ]"
                 >
-                  {{ file }}
+                  <div class="font-medium">{{ screen.name }}</div>
+                  <div class="text-xs text-gray-400">{{ screen.id }}</div>
                 </button>
               </div>
               
@@ -297,125 +273,121 @@
                 </div>
               </div>
               
-              <div v-if="getFlowStats().appToUser > 0" class="mt-4 p-3 bg-gray-700 rounded">
-                <h3 class="font-medium mb-2">Current Session</h3>
+              <div v-if="getSequenceStats().userToApp > 0" class="mt-4 p-3 bg-gray-700 rounded">
+                <h3 class="font-medium mb-2">Current Sequence</h3>
                 <div class="text-xs text-gray-400 space-y-1">
-                  <div>Messages: {{ getFlowStats().appToUser }}</div>
-                  <div>User Actions: {{ getFlowStats().userToApp }}</div>
-                  <div>Interactions: {{ messageHistory.length }}</div>
+                  <div>User Actions: {{ getSequenceStats().userToApp }}</div>
+                  <div>App Processes: {{ getSequenceStats().appToApp }}</div>
+                  <div>App Responses: {{ getSequenceStats().appToUser }}</div>
                 </div>
               </div>
             </div>
             
-            <!-- Center Panel: Message Flow -->
+            <!-- Center Panel: App Screen Mockup -->
             <div class="w-1/2 bg-gray-900 p-4 overflow-y-auto">
-              <h2 class="text-lg font-semibold mb-4">Interactive Message Flow</h2>
+              <h2 class="text-lg font-semibold mb-4">App Screen Mockup</h2>
               
               <div v-if="!currentApml" class="text-center text-gray-400 mt-20">
-                <div class="text-6xl mb-4">💬</div>
-                <p>Select an APML file to simulate message flows</p>
+                <div class="text-6xl mb-4">📱</div>
+                <p>Select an app screen to simulate interactions</p>
               </div>
               
               <div v-else class="space-y-4">
-                <!-- Message History -->
-                <div class="space-y-3">
+                <!-- App Screen Mockup -->
+                <div class="bg-white rounded-lg p-6 max-w-md mx-auto" style="width: 300px; height: 500px;">
+                  <div class="text-center mb-4">
+                    <h3 class="text-lg font-bold text-gray-800">{{ currentScreenData?.name }}</h3>
+                    <p class="text-sm text-gray-600">{{ currentApml.metadata?.title }}</p>
+                  </div>
+                  
+                  <!-- Interactive Buttons -->
+                  <div class="space-y-3">
+                    <button
+                      v-for="button in getScreenButtons()"
+                      :key="button.id"
+                      @click="handleButtonClick(button)"
+                      class="w-full p-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-left"
+                    >
+                      <div class="text-sm font-medium">{{ button.label }}</div>
+                      <div class="text-xs opacity-75">Tap to trigger APML sequence</div>
+                    </button>
+                  </div>
+                  
+                  <!-- Screen Info -->
+                  <div class="mt-6 p-3 bg-gray-100 rounded text-xs text-gray-600">
+                    <div>Screen: {{ currentScreenData?.id }}</div>
+                    <div>Actions: {{ getScreenButtons().length }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Right Panel: APML Sequence + Chat -->
+            <div class="w-1/4 bg-gray-800 border-l border-gray-700 p-4 overflow-y-auto flex flex-col">
+              <!-- APML Sequence -->
+              <div class="flex-1">
+                <h2 class="text-lg font-semibold mb-4">APML Sequence</h2>
+                
+                <div v-if="messageSequence.length > 0" class="space-y-2 mb-4">
                   <div
-                    v-for="message in messageHistory"
+                    v-for="message in messageSequence"
                     :key="message.timestamp"
                     :class="[
-                      'message-box p-4 rounded-lg max-w-md',
-                      message.type === 'app-to-user' 
-                        ? 'bg-blue-600 text-white ml-0' 
-                        : 'bg-green-600 text-white ml-auto'
+                      'p-2 rounded text-xs',
+                      message.type === 'user-to-app' ? 'bg-green-900 text-green-100' :
+                      message.type === 'app-to-app' ? 'bg-purple-900 text-purple-100' :
+                      'bg-blue-900 text-blue-100'
                     ]"
                   >
-                    <div class="text-xs opacity-75 mb-1">
-                      {{ message.type.replace('-', ' → ').toUpperCase() }}
-                    </div>
+                    <div class="font-medium">{{ message.type.replace('-', ' → ').toUpperCase() }}</div>
                     <div>{{ message.content }}</div>
                   </div>
                 </div>
                 
-                <!-- Background Processes -->
-                <div v-if="backgroundProcesses.length > 0" class="my-6">
+                <div v-if="currentApml?.patterns" class="space-y-3">
+                  <div class="p-2 bg-gray-700 rounded">
+                    <h4 class="font-medium mb-1 text-blue-400 text-sm">Available Patterns</h4>
+                    <div class="text-xs text-gray-400">
+                      <div>User Actions: {{ currentApml.patterns.user_to_app?.length || 0 }}</div>
+                      <div>App Processes: {{ currentApml.patterns.app_to_app?.length || 0 }}</div>
+                      <div>App Responses: {{ currentApml.patterns.app_to_user?.length || 0 }}</div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <!-- Chat with ADE -->
+              <div class="border-t border-gray-700 pt-4 mt-4">
+                <h3 class="text-sm font-semibold mb-2">💬 Chat with ADE</h3>
+                
+                <div class="space-y-2 mb-3 max-h-32 overflow-y-auto">
                   <div
-                    v-for="process in backgroundProcesses"
-                    :key="process.id"
-                    class="bg-purple-800 p-3 rounded-lg mx-auto max-w-md text-center"
+                    v-for="chat in chatHistory"
+                    :key="chat.timestamp"
+                    :class="[
+                      'p-2 rounded text-xs',
+                      chat.type === 'user' ? 'bg-green-800 text-green-100' : 'bg-blue-800 text-blue-100'
+                    ]"
                   >
-                    <div class="text-xs opacity-75 mb-1">APP → APP PROCESS</div>
-                    <div class="flex items-center justify-center space-x-2">
-                      <div class="animate-spin w-4 h-4 border-2 border-white border-t-transparent rounded-full"></div>
-                      <span>{{ process.content }}</span>
-                    </div>
+                    <div class="font-medium">{{ chat.type === 'user' ? 'You' : 'ADE' }}</div>
+                    <div>{{ chat.content }}</div>
                   </div>
                 </div>
                 
-                <!-- Available User Actions -->
-                <div v-if="availableActions.length > 0" class="mt-6">
-                  <div class="text-sm text-gray-400 mb-3">Available Actions:</div>
-                  <div class="space-y-2">
-                    <button
-                      v-for="action in availableActions"
-                      :key="action.id"
-                      @click="executeUserAction(action)"
-                      class="block w-full text-left p-3 bg-green-700 hover:bg-green-600 rounded-lg transition-colors"
-                    >
-                      <div class="text-xs opacity-75 mb-1">USER → APP</div>
-                      <div>{{ action.content }}</div>
-                    </button>
-                  </div>
+                <div class="flex">
+                  <input
+                    v-model="userFeedback"
+                    @keyup.enter="sendChatMessage"
+                    placeholder="Tell ADE your thoughts..."
+                    class="flex-1 px-2 py-1 bg-gray-700 border border-gray-600 rounded-l text-xs text-white"
+                  />
+                  <button
+                    @click="sendChatMessage"
+                    class="px-3 py-1 bg-blue-600 hover:bg-blue-700 rounded-r text-xs text-white"
+                  >
+                    Send
+                  </button>
                 </div>
-              </div>
-            </div>
-            
-            <!-- Right Panel: Flow Analysis -->
-            <div class="w-1/4 bg-gray-800 border-l border-gray-700 p-4 overflow-y-auto">
-              <h2 class="text-lg font-semibold mb-4">Flow Analysis</h2>
-              
-              <div v-if="currentApml?.patterns" class="space-y-4">
-                <div class="p-3 bg-gray-700 rounded">
-                  <h3 class="font-medium mb-2 text-blue-400">App → User Messages</h3>
-                  <div class="space-y-1 text-xs">
-                    <div
-                      v-for="(message, index) in currentApml.patterns.app_to_user || []"
-                      :key="index"
-                      class="p-2 bg-blue-900 rounded text-blue-100"
-                    >
-                      {{ message }}
-                    </div>
-                  </div>
-                </div>
-                
-                <div class="p-3 bg-gray-700 rounded">
-                  <h3 class="font-medium mb-2 text-green-400">User → App Actions</h3>
-                  <div class="space-y-1 text-xs">
-                    <div
-                      v-for="(action, index) in currentApml.patterns.user_to_app || []"
-                      :key="index"
-                      class="p-2 bg-green-900 rounded text-green-100"
-                    >
-                      {{ action }}
-                    </div>
-                  </div>
-                </div>
-                
-                <div class="p-3 bg-gray-700 rounded">
-                  <h3 class="font-medium mb-2 text-purple-400">App → App Processes</h3>
-                  <div class="space-y-1 text-xs">
-                    <div
-                      v-for="(process, index) in currentApml.patterns.app_to_app || []"
-                      :key="index"
-                      class="p-2 bg-purple-900 rounded text-purple-100"
-                    >
-                      {{ process }}
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <div class="mt-6 text-xs text-gray-400">
-                <p><strong>🎯 Flow Validation:</strong> Click through all possible user interactions to verify complete conversation flows make logical sense.</p>
               </div>
             </div>
           </div>
