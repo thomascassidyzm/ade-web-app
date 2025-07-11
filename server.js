@@ -19,6 +19,11 @@ app.get('/visualizer', (req, res) => {
   res.sendFile(path.join(__dirname, 'apml-visualizer.html'));
 });
 
+// Serve the Message Flow Simulator
+app.get('/simulator', (req, res) => {
+  res.sendFile(path.join(__dirname, 'message-flow-simulator.html'));
+});
+
 // Health check
 app.get('/health', (req, res) => {
   res.json({ status: 'ADE is running', timestamp: new Date().toISOString() });
