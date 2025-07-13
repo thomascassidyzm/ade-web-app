@@ -107,25 +107,144 @@
           }));
         };
         
+        // APML-to-Visual Compiler (UI Components)
+        const compileApmlToVisual = (screenData) => {
+          if (!screenData) return { layout: 'default', components: [] };
+          
+          const screenId = screenData.id;
+          const purpose = screenData.purpose || '';
+          const actions = screenData.actions || [];
+          
+          // Pattern library mapping
+          const patterns = {
+            chat: {
+              layout: 'chat',
+              components: [
+                { type: 'message_list', props: { messages: generateMockMessages() } },
+                { type: 'message_input', props: { placeholder: 'Type a message...' } },
+                { type: 'action_sheet', props: { actions: actions } }
+              ]
+            },
+            task: {
+              layout: 'task',
+              components: [
+                { type: 'task_list', props: { tasks: generateMockTasks() } },
+                { type: 'progress_bar', props: { completed: 2, total: 5 } },
+                { type: 'action_buttons', props: { actions: actions, color: 'green' } }
+              ]
+            },
+            file: {
+              layout: 'file',
+              components: [
+                { type: 'file_grid', props: { files: generateMockFiles() } },
+                { type: 'search_bar', props: { placeholder: 'Search files...' } },
+                { type: 'action_buttons', props: { actions: actions, color: 'purple' } }
+              ]
+            },
+            team: {
+              layout: 'team',
+              components: [
+                { type: 'member_list', props: { members: generateMockMembers() } },
+                { type: 'status_indicator', props: { online: 2, total: 4 } },
+                { type: 'action_buttons', props: { actions: actions, color: 'indigo' } }
+              ]
+            },
+            form: {
+              layout: 'form',
+              components: [
+                { type: 'form_container', props: { fields: generateFormFields(screenId) } },
+                { type: 'action_buttons', props: { actions: actions, color: 'orange' } }
+              ]
+            },
+            upload: {
+              layout: 'upload',
+              components: [
+                { type: 'drop_zone', props: { accept: '.pdf,.jpg,.png,.doc' } },
+                { type: 'upload_progress', props: { files: [] } },
+                { type: 'action_buttons', props: { actions: actions, color: 'teal' } }
+              ]
+            },
+            search: {
+              layout: 'search',
+              components: [
+                { type: 'search_input', props: { placeholder: 'Search everything...' } },
+                { type: 'result_list', props: { results: generateMockResults() } },
+                { type: 'action_buttons', props: { actions: actions, color: 'gray' } }
+              ]
+            },
+            celebration: {
+              layout: 'celebration',
+              components: [
+                { type: 'celebration_animation', props: { icon: '🎉', title: 'Success!' } },
+                { type: 'action_buttons', props: { actions: actions, color: 'green' } }
+              ]
+            }
+          };
+          
+          // Determine pattern based on screen type
+          let patternType = 'default';
+          
+          if (screenId.includes('chat')) patternType = 'chat';
+          else if (screenId.includes('task')) patternType = 'task';
+          else if (screenId.includes('file')) patternType = 'file';
+          else if (screenId.includes('team')) patternType = 'team';
+          else if (screenId.includes('creation') || screenId.includes('assignment') || screenId.includes('invitation')) patternType = 'form';
+          else if (screenId.includes('upload')) patternType = 'upload';
+          else if (screenId.includes('search') || screenId.includes('results')) patternType = 'search';
+          else if (screenId.includes('completion')) patternType = 'celebration';
+          
+          return patterns[patternType] || {
+            layout: 'default',
+            components: [
+              { type: 'action_buttons', props: { actions: actions, color: 'blue' } }
+            ]
+          };
+        };
+        
+        // Mock data generators for pattern library
+        const generateMockMessages = () => [
+          { author: 'Sarah', content: "Hey team! How's the project going?", time: '2:30 PM', type: 'received' },
+          { author: 'You', content: "Making great progress! Just shared the latest files.", time: '2:32 PM', type: 'sent' }
+        ];
+        
+        const generateMockTasks = () => [
+          { title: 'Review wireframes v2', completed: true, due: 'tomorrow', assignee: 'Sarah' },
+          { title: 'Update project timeline', completed: false, due: 'Friday', assignee: 'Mike' }
+        ];
+        
+        const generateMockFiles = () => [
+          { name: 'wireframes-v2.sketch', size: '2.4 MB', icon: '📄', type: 'design' },
+          { name: 'project-timeline.pdf', size: '856 KB', icon: '📊', type: 'document' }
+        ];
+        
+        const generateMockMembers = () => [
+          { name: 'Sarah Chen', status: 'online', avatar: 'S', color: 'green' },
+          { name: 'Mike Johnson', status: 'away', avatar: 'M', color: 'blue' }
+        ];
+        
+        const generateFormFields = (screenId) => {
+          if (screenId.includes('task')) {
+            return [
+              { type: 'text', label: 'Task Title', placeholder: 'Enter task title...' },
+              { type: 'textarea', label: 'Description', placeholder: 'Enter description...' },
+              { type: 'select', label: 'Assign to', options: ['Sarah Chen', 'Mike Johnson'] },
+              { type: 'date', label: 'Due Date' }
+            ];
+          }
+          return [
+            { type: 'text', label: 'Title', placeholder: 'Enter title...' },
+            { type: 'textarea', label: 'Description', placeholder: 'Enter description...' }
+          ];
+        };
+        
+        const generateMockResults = () => [
+          { title: '"wireframes v2" in #design', subtitle: 'Found in conversation yesterday', type: 'message' },
+          { title: 'wireframes-v2.sketch', subtitle: 'File shared by Sarah', type: 'file' }
+        ];
+        
         const getScreenLayout = () => {
-          if (!currentScreenData.value) return 'default';
-          
-          const screenId = currentScreenData.value.id;
-          
-          // Main screens
-          if (screenId === 'chat_screen' || screenId === 'chat_screen_updated') return 'chat';
-          if (screenId === 'task_screen') return 'task';
-          if (screenId === 'file_screen') return 'file';
-          if (screenId === 'team_screen') return 'team';
-          
-          // Form screens
-          if (screenId.includes('creation') || screenId.includes('assignment') || screenId.includes('invitation')) return 'form';
-          if (screenId.includes('upload')) return 'upload';
-          if (screenId.includes('search') || screenId.includes('results')) return 'search';
-          if (screenId.includes('detail')) return 'detail';
-          if (screenId.includes('completion')) return 'celebration';
-          
-          return 'default';
+          const visualData = compileApmlToVisual(currentScreenData.value);
+          return visualData.layout;
         };
         
         const handleButtonClick = (button) => {
@@ -277,7 +396,7 @@
           return { userToApp, appToApp, appToUser };
         };
         
-        // APML-to-Mermaid Compiler
+        // APML-to-Mermaid Compiler (Flow Diagrams)
         const compileApmlToMermaid = () => {
           if (!currentApml.value?.screens) return '';
           
@@ -436,7 +555,8 @@
           resetScreen,
           getSequenceStats,
           transitionToNextScreen,
-          goBackToPreviousScreen
+          goBackToPreviousScreen,
+          compileApmlToVisual
         };
       },
       
