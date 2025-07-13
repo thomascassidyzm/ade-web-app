@@ -7,6 +7,7 @@
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
   <script src="https://unpkg.com/js-yaml@4.1.0/dist/js-yaml.min.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://unpkg.com/mermaid@10.6.1/dist/mermaid.min.js"></script>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
     .screen-transition {
@@ -42,6 +43,8 @@
         const screenHistory = ref([]);
         const currentScreenIndex = ref(0);
         const showTechnicalDetails = ref(false);
+        const mermaidDiagram = ref('');
+        const mermaidElementId = ref('mermaid-diagram');
         
         const loadApp = async (filename) => {
           try {
@@ -63,6 +66,9 @@
               if (appScreens.value.length > 0) {
                 loadScreen(appScreens.value[0]);
               }
+              
+              // Generate initial Mermaid diagram
+              setTimeout(() => updateMermaidDiagram(), 100);
             }
           } catch (error) {
             console.error('Failed to load app:', error);
@@ -73,6 +79,7 @@
           selectedScreen.value = screen.id;
           currentScreenData.value = screen;
           initializeScreen();
+          updateMermaidDiagram();
         };
         
         const initializeScreen = () => {
@@ -164,6 +171,7 @@
               // Transition to next screen
               currentScreenData.value = nextScreen;
               selectedScreen.value = nextScreen.id;
+              updateMermaidDiagram();
             }
           }
         };
@@ -179,6 +187,8 @@
               content: `Screen transition: Back to ${previousScreen.name}`,
               timestamp: Date.now()
             });
+            
+            updateMermaidDiagram();
           }
         };
         
@@ -242,7 +252,87 @@
           return { userToApp, appToApp, appToUser };
         };
         
+        // APML-to-Mermaid Compiler
+        const compileApmlToMermaid = () => {
+          if (!currentApml.value?.screens) return '';
+          
+          const screens = currentApml.value.screens;
+          let mermaidCode = 'flowchart TD\n';
+          
+          // Define main screens with special styling
+          const mainScreens = ['chat_screen', 'task_screen', 'file_screen', 'team_screen'];
+          
+          // Add screen nodes
+          Object.entries(screens).forEach(([screenId, screen]) => {
+            const isMain = mainScreens.includes(screenId);
+            const cleanName = screen.name?.replace(' Screen', '') || screenId;
+            
+            if (isMain) {
+              mermaidCode += `    ${screenId}["🏠 ${cleanName}"]:::mainScreen\n`;
+            } else {
+              mermaidCode += `    ${screenId}["${cleanName}"]:::flowScreen\n`;
+            }
+          });
+          
+          // Add connections based on next_screen properties
+          Object.entries(screens).forEach(([screenId, screen]) => {
+            if (screen.user_actions) {
+              const connections = new Set(); // Avoid duplicate connections
+              
+              screen.user_actions.forEach(action => {
+                if (action.next_screen && screens[action.next_screen]) {
+                  connections.add(action.next_screen);
+                }
+              });
+              
+              connections.forEach(nextScreen => {
+                mermaidCode += `    ${screenId} --> ${nextScreen}\n`;
+              });
+            }
+          });
+          
+          // Add styling
+          mermaidCode += `
+    classDef mainScreen fill:#10b981,stroke:#059669,stroke-width:3px,color:#fff
+    classDef flowScreen fill:#3b82f6,stroke:#2563eb,stroke-width:2px,color:#fff
+    classDef currentScreen fill:#f59e0b,stroke:#d97706,stroke-width:4px,color:#000
+`;
+          
+          return mermaidCode;
+        };
+        
+        const updateMermaidDiagram = async () => {
+          const diagramCode = compileApmlToMermaid();
+          if (!diagramCode) return;
+          
+          // Highlight current screen
+          let finalCode = diagramCode;
+          if (selectedScreen.value) {
+            finalCode += `    class ${selectedScreen.value} currentScreen\n`;
+          }
+          
+          mermaidDiagram.value = finalCode;
+          
+          // Re-render Mermaid diagram
+          setTimeout(async () => {
+            const element = document.getElementById(mermaidElementId.value);
+            if (element) {
+              element.innerHTML = '';
+              try {
+                const { svg } = await mermaid.render(mermaidElementId.value + '-svg', finalCode);
+                element.innerHTML = svg;
+              } catch (error) {
+                console.error('Mermaid render error:', error);
+                element.innerHTML = '<p class="text-red-400 text-sm">Error rendering flow diagram</p>';
+              }
+            }
+          }, 100);
+        };
+        
         onMounted(() => {
+          // Initialize Mermaid
+          mermaid.initialize({ theme: 'dark', themeVariables: { primaryColor: '#10b981' } });
+          
           // Load ProjectChat app by default
           loadApp('projectchat-app.apml');
         });
@@ -307,154 +397,21 @@
           </header>
           
           <div class="flex h-screen">
-            <!-- Left Panel: App Flow Map (40%) -->
-            <div class="w-2/5 bg-gray-800 border-r border-gray-700 p-4 overflow-y-auto">
-              <!-- App Flow Map -->
-              <div class="flex-1">
-                <h2 class="text-lg font-semibold mb-4">🗺️ App Flow Diagram</h2>
-                
-                <!-- Current Location -->
-                <div v-if="currentScreenData" class="mb-4 p-3 bg-blue-900 rounded">
-                  <div class="font-medium text-blue-100">📍 You are here</div>
-                  <div class="text-sm text-blue-200">{{ currentScreenData.name }}</div>
-                </div>
-                
-                <!-- Main App Sections -->
-                <div class="space-y-3">
-                  <div class="p-3 bg-gray-700 rounded">
-                    <h3 class="text-sm font-medium mb-2 text-green-400">Main Sections</h3>
-                    <div class="space-y-1">
-                      <button
-                        v-for="screen in appScreens.filter(s => ['chat_screen', 'task_screen', 'file_screen', 'team_screen'].includes(s.id))"
-                        :key="screen.id"
-                        @click="loadScreen(screen)"
-                        :class="[
-                          'w-full text-left px-2 py-1 rounded text-xs transition-colors',
-                          selectedScreen === screen.id 
-                            ? 'bg-green-600 text-white' 
-                            : 'bg-gray-600 hover:bg-gray-500 text-gray-300'
-                        ]"
-                      >
-                        {{ selectedScreen === screen.id ? '👉' : '📄' }} {{ screen.name }}
-                      </button>
-                    </div>
-                  </div>
-                  
-                  <div v-if="screenHistory.length > 0" class="p-3 bg-gray-700 rounded">
-                    <h3 class="text-sm font-medium mb-2 text-purple-400">Recent Screens</h3>
-                    <div class="space-y-1">
-                      <button
-                        v-for="(screen, index) in screenHistory.slice(-3)"
-                        :key="screen.id + '-' + index"
-                        @click="goBackToPreviousScreen"
-                        class="w-full text-left px-2 py-1 rounded text-xs bg-gray-600 hover:bg-gray-500 text-gray-300"
-                      >
-                        ← {{ screen.name }}
-                      </button>
-                    </div>
-                  </div>
+            <!-- Left Panel: Large Mermaid Diagram + ADE Chat (60%) -->
+            <div class="w-3/5 bg-gray-800 border-r border-gray-700 p-4 overflow-y-auto flex flex-col">
+              <!-- Large Mermaid Flow Diagram -->
+              <div class="flex-1 mb-6">
+                <h2 class="text-xl font-semibold mb-4">🗺️ App Flow Diagram</h2>
+                <div class="h-full p-6 bg-gray-900 rounded-lg border border-gray-600">
+                  <div id="mermaid-diagram" class="text-center h-full"></div>
                 </div>
               </div>
               
-            </div>
-            
-            <!-- Center Panel: Real iPhone 12 Simulator -->
-            <div class="flex-1 bg-gray-900 p-4 overflow-y-auto flex items-center justify-center">
-              <div v-if="!currentScreenData" class="text-center text-gray-400">
-                <div class="text-6xl mb-4">📱</div>
-                <p>Loading ProjectChat...</p>
-              </div>
-              
-              <!-- Real iPhone 12 Size: 390x844px -->
-              <div v-else class="bg-black rounded-3xl shadow-2xl" style="width: 390px; height: 844px; position: relative;">
-                <!-- iPhone Frame -->
-                <div class="absolute inset-0 bg-black rounded-3xl p-1">
-                  <!-- Screen -->
-                  <div class="bg-white rounded-3xl h-full flex flex-col relative overflow-hidden">
-                    <!-- Dynamic Island -->
-                    <div class="absolute top-2 left-1/2 transform -translate-x-1/2 w-32 h-6 bg-black rounded-full z-10"></div>
-                    <!-- Status Bar -->
-                    <div class="flex justify-between items-center px-6 py-3 text-sm text-black bg-white">
-                      <span class="font-semibold">9:41</span>
-                      <div class="flex items-center space-x-1">
-                        <div class="w-4 h-2 bg-black rounded-sm"></div>
-                        <div class="w-6 h-3 border border-black rounded-sm">
-                          <div class="w-full h-full bg-green-500 rounded-sm"></div>
-                        </div>
-                      </div>
-                    </div>
-                      
-                    <!-- Screen Header -->
-                    <div class="px-6 py-4 border-b border-gray-200 bg-white">
-                      <div class="flex items-center justify-between">
-                        <div>
-                          <h3 class="text-xl font-bold text-gray-900">{{ currentScreenData.name }}</h3>
-                          <p class="text-sm text-gray-600 mt-1">{{ currentScreenData.purpose }}</p>
-                        </div>
-                        <div v-if="screenHistory.length > 0">
-                          <button 
-                            @click="goBackToPreviousScreen"
-                            class="text-blue-500 text-lg px-3 py-2 rounded-lg hover:bg-blue-50"
-                          >
-                            ← Back
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                      
-                    <!-- Screen Content -->
-                    <div class="flex-1 p-6 overflow-y-auto bg-gray-50">
-                      <div class="space-y-4">
-                        <button
-                          v-for="button in getScreenButtons()"
-                          :key="button.id"
-                          @click="handleButtonClick(button)"
-                          class="w-full p-5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-colors text-left shadow-lg active:scale-95"
-                        >
-                          <div class="text-base font-semibold">{{ button.label }}</div>
-                          <div class="text-sm opacity-90 mt-2">{{ button.description }}</div>
-                        </button>
-                      </div>
-                    </div>
-                      
-                    <!-- Bottom Navigation (if main screen) -->
-                    <div v-if="['chat_screen', 'task_screen', 'file_screen', 'team_screen'].includes(currentScreenData.id)" class="border-t border-gray-200 bg-white px-6 py-4">
-                      <div class="flex justify-around">
-                        <button 
-                          v-for="screen in appScreens.filter(s => ['chat_screen', 'task_screen', 'file_screen', 'team_screen'].includes(s.id))"
-                          :key="screen.id"
-                          @click="loadScreen(screen)"
-                          :class="[
-                            'flex flex-col items-center py-3 px-4 rounded-xl text-sm transition-colors',
-                            selectedScreen === screen.id 
-                              ? 'text-blue-600 bg-blue-50' 
-                              : 'text-gray-500 hover:text-gray-700'
-                          ]"
-                        >
-                          <div class="text-2xl mb-2">
-                            {{ screen.id === 'chat_screen' ? '💬' : 
-                                screen.id === 'task_screen' ? '✅' : 
-                                screen.id === 'file_screen' ? '📁' : '👥' }}
-                          </div>
-                          <div class="font-medium">{{ screen.name.replace(' Screen', '') }}</div>
-                        </button>
-                      </div>
-                    </div>
-                    
-                    <!-- Home Indicator -->
-                    <div class="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-black rounded-full opacity-60"></div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            <!-- Right Panel: Chat + Technical Details (30%) -->
-            <div class="w-3/10 bg-gray-800 border-l border-gray-700 p-4 overflow-y-auto flex flex-col" style="width: 30%;">
-              <!-- Chat Section -->
-              <div class="flex-1">
-                <h2 class="text-lg font-semibold mb-4">💬 Feedback</h2>
+              <!-- ADE Chat Section -->
+              <div class="border-t border-gray-700 pt-4">
+                <h2 class="text-lg font-semibold mb-4">💬 ADE Interaction</h2>
                 
-                <div class="space-y-2 mb-4 max-h-48 overflow-y-auto">
+                <div class="space-y-2 mb-4 max-h-32 overflow-y-auto">
                   <div
                     v-for="chat in chatHistory"
                     :key="chat.timestamp"
@@ -468,7 +425,7 @@
                   </div>
                 </div>
                 
-                <div class="flex mb-6">
+                <div class="flex">
                   <input
                     v-model="userFeedback"
                     @keyup.enter="sendChatMessage"
@@ -483,61 +440,145 @@
                   </button>
                 </div>
               </div>
+            </div>
+            
+            <!-- Right Panel: iPhone App + Technical Details (40%) -->
+            <div class="w-2/5 bg-gray-900 p-4 overflow-y-auto flex flex-col">
+              <!-- iPhone Simulator -->
+              <div class="flex items-center justify-center mb-6">
+                <div v-if="!currentScreenData" class="text-center text-gray-400">
+                  <div class="text-6xl mb-4">📱</div>
+                  <p>Loading ProjectChat...</p>
+                </div>
+                
+                <!-- Real iPhone 12 Size: 390x844px -->
+                <div v-else class="bg-black rounded-3xl shadow-2xl" style="width: 390px; height: 844px; position: relative;">
+                  <!-- iPhone Frame -->
+                  <div class="absolute inset-0 bg-black rounded-3xl p-1">
+                    <!-- Screen -->
+                    <div class="bg-white rounded-3xl h-full flex flex-col relative overflow-hidden">
+                      <!-- Dynamic Island -->
+                      <div class="absolute top-2 left-1/2 transform -translate-x-1/2 w-32 h-6 bg-black rounded-full z-10"></div>
+                      <!-- Status Bar -->
+                      <div class="flex justify-between items-center px-6 py-3 text-sm text-black bg-white">
+                        <span class="font-semibold">9:41</span>
+                        <div class="flex items-center space-x-1">
+                          <div class="w-4 h-2 bg-black rounded-sm"></div>
+                          <div class="w-6 h-3 border border-black rounded-sm">
+                            <div class="w-full h-full bg-green-500 rounded-sm"></div>
+                          </div>
+                        </div>
+                      </div>
+                        
+                      <!-- Screen Header -->
+                      <div class="px-6 py-4 border-b border-gray-200 bg-white">
+                        <div class="flex items-center justify-between">
+                          <div>
+                            <h3 class="text-xl font-bold text-gray-900">{{ currentScreenData.name }}</h3>
+                            <p class="text-sm text-gray-600 mt-1">{{ currentScreenData.purpose }}</p>
+                          </div>
+                          <div v-if="screenHistory.length > 0">
+                            <button 
+                              @click="goBackToPreviousScreen"
+                              class="text-blue-500 text-lg px-3 py-2 rounded-lg hover:bg-blue-50"
+                            >
+                              ← Back
+                            </button>
+                          </div>
+                        </div>
+                      </div>
+                        
+                      <!-- Screen Content -->
+                      <div class="flex-1 p-6 overflow-y-auto bg-gray-50">
+                        <div class="space-y-4">
+                          <button
+                            v-for="button in getScreenButtons()"
+                            :key="button.id"
+                            @click="handleButtonClick(button)"
+                            class="w-full p-5 bg-blue-500 hover:bg-blue-600 text-white rounded-xl transition-colors text-left shadow-lg active:scale-95"
+                          >
+                            <div class="text-base font-semibold">{{ button.label }}</div>
+                            <div class="text-sm opacity-90 mt-2">{{ button.description }}</div>
+                          </button>
+                        </div>
+                      </div>
+                        
+                      <!-- Bottom Navigation (if main screen) -->
+                      <div v-if="['chat_screen', 'task_screen', 'file_screen', 'team_screen'].includes(currentScreenData.id)" class="border-t border-gray-200 bg-white px-6 py-4">
+                        <div class="flex justify-around">
+                          <button 
+                            v-for="screen in appScreens.filter(s => ['chat_screen', 'task_screen', 'file_screen', 'team_screen'].includes(s.id))"
+                            :key="screen.id"
+                            @click="loadScreen(screen)"
+                            :class="[
+                              'flex flex-col items-center py-3 px-4 rounded-xl text-sm transition-colors',
+                              selectedScreen === screen.id 
+                                ? 'text-blue-600 bg-blue-50' 
+                                : 'text-gray-500 hover:text-gray-700'
+                            ]"
+                          >
+                            <div class="text-2xl mb-2">
+                              {{ screen.id === 'chat_screen' ? '💬' : 
+                                  screen.id === 'task_screen' ? '✅' : 
+                                  screen.id === 'file_screen' ? '📁' : '👥' }}
+                            </div>
+                            <div class="font-medium">{{ screen.name.replace(' Screen', '') }}</div>
+                          </button>
+                        </div>
+                      </div>
+                      
+                      <!-- Home Indicator -->
+                      <div class="absolute bottom-2 left-1/2 transform -translate-x-1/2 w-32 h-1 bg-black rounded-full opacity-60"></div>
+                    </div>
+                  </div>
+                </div>
+              </div>
               
               <!-- Technical Details (Collapsible) -->
               <div v-if="showTechnicalDetails" class="border-t border-gray-700 pt-4">
                 <h3 class="text-lg font-semibold mb-4">🔧 Technical Details</h3>
               
-              <div class="space-y-4">
-                <!-- APML Sequence -->
-                <div>
-                  <h3 class="text-sm font-medium mb-2 text-orange-400">APML Message Sequence</h3>
-                  <div v-if="messageSequence.length > 0" class="space-y-2">
-                    <div
-                      v-for="message in messageSequence"
-                      :key="message.timestamp"
-                      :class="[
-                        'p-2 rounded text-xs',
-                        message.type === 'user-to-app' ? 'bg-green-900 text-green-100' :
-                        message.type === 'app-to-app' ? 'bg-purple-900 text-purple-100' :
-                        'bg-blue-900 text-blue-100'
-                      ]"
-                    >
-                      <div class="font-medium">{{ message.type.replace('-', ' → ').toUpperCase() }}</div>
-                      <div>{{ message.content }}</div>
+                <div class="space-y-4">
+                  <!-- APML Sequence -->
+                  <div>
+                    <h3 class="text-sm font-medium mb-2 text-orange-400">APML Message Sequence</h3>
+                    <div v-if="messageSequence.length > 0" class="space-y-2 max-h-32 overflow-y-auto">
+                      <div
+                        v-for="message in messageSequence"
+                        :key="message.timestamp"
+                        :class="[
+                          'p-2 rounded text-xs',
+                          message.type === 'user-to-app' ? 'bg-green-900 text-green-100' :
+                          message.type === 'app-to-app' ? 'bg-purple-900 text-purple-100' :
+                          'bg-blue-900 text-blue-100'
+                        ]"
+                      >
+                        <div class="font-medium">{{ message.type.replace('-', ' → ').toUpperCase() }}</div>
+                        <div>{{ message.content }}</div>
+                      </div>
+                    </div>
+                    <div v-else class="text-center text-gray-400 py-4">
+                      <div class="text-xl mb-2">🔄</div>
+                      <p class="text-xs">Interact with app to see APML sequence</p>
                     </div>
                   </div>
-                  <div v-else class="text-center text-gray-400 py-8">
-                    <div class="text-2xl mb-2">🔄</div>
-                    <p class="text-xs">Interact with app to see APML sequence</p>
+                  
+                  <!-- Screen Data -->
+                  <div v-if="currentScreenData" class="p-3 bg-gray-700 rounded">
+                    <h3 class="text-sm font-medium mb-2 text-blue-400">Current Screen Data</h3>
+                    <div class="text-xs text-gray-300 space-y-1">
+                      <div><strong>ID:</strong> {{ currentScreenData.id }}</div>
+                      <div><strong>Actions:</strong> {{ currentScreenData.actions?.length || 0 }}</div>
+                      <div><strong>Purpose:</strong> {{ currentScreenData.purpose }}</div>
+                    </div>
                   </div>
                 </div>
                 
-                <!-- Screen Data -->
-                <div v-if="currentScreenData" class="p-3 bg-gray-700 rounded">
-                  <h3 class="text-sm font-medium mb-2 text-blue-400">Current Screen Data</h3>
-                  <div class="text-xs text-gray-300 space-y-1">
-                    <div><strong>ID:</strong> {{ currentScreenData.id }}</div>
-                    <div><strong>Actions:</strong> {{ currentScreenData.actions?.length || 0 }}</div>
-                    <div><strong>Purpose:</strong> {{ currentScreenData.purpose }}</div>
-                  </div>
+                <div class="mt-4 p-3 bg-gray-900 rounded border border-gray-600">
+                  <p class="text-xs text-gray-400">
+                    <strong>🎯 For Developers:</strong> This shows the underlying APML processing.
+                  </p>
                 </div>
-                
-                <!-- App Patterns -->
-                <div v-if="currentApml?.patterns" class="p-3 bg-gray-700 rounded">
-                  <h3 class="text-sm font-medium mb-2 text-purple-400">APML Patterns</h3>
-                  <div class="text-xs text-gray-300 space-y-1">
-                    <div>User→App: {{ currentApml.patterns.user_to_app?.length || 0 }}</div>
-                    <div>App→App: {{ currentApml.patterns.app_to_app?.length || 0 }}</div>
-                    <div>App→User: {{ currentApml.patterns.app_to_user?.length || 0 }}</div>
-                  </div>
-                </div>
-              </div>
-              
-              <div class="mt-6 p-3 bg-gray-900 rounded border border-gray-600">
-                <p class="text-xs text-gray-400">
-                  <strong>🎯 For Developers:</strong> This shows the underlying APML processing. Regular users don't need to see this - they just experience the app flow.
-                </p>
               </div>
             </div>
           </div>
