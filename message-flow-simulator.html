@@ -107,6 +107,27 @@
           }));
         };
         
+        const getScreenLayout = () => {
+          if (!currentScreenData.value) return 'default';
+          
+          const screenId = currentScreenData.value.id;
+          
+          // Main screens
+          if (screenId === 'chat_screen' || screenId === 'chat_screen_updated') return 'chat';
+          if (screenId === 'task_screen') return 'task';
+          if (screenId === 'file_screen') return 'file';
+          if (screenId === 'team_screen') return 'team';
+          
+          // Form screens
+          if (screenId.includes('creation') || screenId.includes('assignment') || screenId.includes('invitation')) return 'form';
+          if (screenId.includes('upload')) return 'upload';
+          if (screenId.includes('search') || screenId.includes('results')) return 'search';
+          if (screenId.includes('detail')) return 'detail';
+          if (screenId.includes('completion')) return 'celebration';
+          
+          return 'default';
+        };
+        
         const handleButtonClick = (button) => {
           // Start APML sequence: User → App
           messageSequence.value.push({
@@ -549,7 +570,234 @@
                         
                       <!-- Screen Content -->
                       <div class="flex-1 p-6 overflow-y-auto bg-gray-50">
-                        <div class="space-y-4">
+                        <!-- Chat Layout -->
+                        <div v-if="getScreenLayout() === 'chat'" class="h-full flex flex-col">
+                          <!-- Messages -->
+                          <div class="flex-1 space-y-3 mb-4">
+                            <div class="bg-blue-100 p-3 rounded-xl max-w-xs">
+                              <div class="text-sm text-gray-800">Hey team! How's the project going?</div>
+                              <div class="text-xs text-gray-500 mt-1">Sarah • 2:30 PM</div>
+                            </div>
+                            <div class="bg-green-500 text-white p-3 rounded-xl max-w-xs ml-auto">
+                              <div class="text-sm">Making great progress! Just shared the latest files.</div>
+                              <div class="text-xs opacity-80 mt-1">You • 2:32 PM</div>
+                            </div>
+                          </div>
+                          <!-- Message Input -->
+                          <div class="flex items-center space-x-2 p-3 bg-white rounded-xl border">
+                            <input type="text" placeholder="Type a message..." class="flex-1 outline-none text-gray-700" />
+                            <button class="w-8 h-8 bg-blue-500 text-white rounded-full flex items-center justify-center">
+                              <span class="text-sm">→</span>
+                            </button>
+                          </div>
+                          <!-- Action Buttons -->
+                          <div class="mt-4 space-y-2">
+                            <button
+                              v-for="button in getScreenButtons()"
+                              :key="button.id"
+                              @click="handleButtonClick(button)"
+                              class="w-full p-3 bg-blue-500 hover:bg-blue-600 text-white rounded-lg transition-colors text-left text-sm"
+                            >
+                              {{ button.label }}
+                            </button>
+                          </div>
+                        </div>
+                        
+                        <!-- Task Layout -->
+                        <div v-else-if="getScreenLayout() === 'task'" class="space-y-4">
+                          <!-- Task List -->
+                          <div class="bg-white rounded-xl p-4 space-y-3">
+                            <div class="flex items-center space-x-3">
+                              <input type="checkbox" class="w-5 h-5 text-green-500" checked />
+                              <div class="flex-1">
+                                <div class="font-medium text-gray-800">Review wireframes v2</div>
+                                <div class="text-sm text-gray-500">Due tomorrow</div>
+                              </div>
+                            </div>
+                            <div class="flex items-center space-x-3">
+                              <input type="checkbox" class="w-5 h-5 text-green-500" />
+                              <div class="flex-1">
+                                <div class="font-medium text-gray-800">Update project timeline</div>
+                                <div class="text-sm text-gray-500">Due Friday</div>
+                              </div>
+                            </div>
+                          </div>
+                          <!-- Action Buttons -->
+                          <div class="space-y-2">
+                            <button
+                              v-for="button in getScreenButtons()"
+                              :key="button.id"
+                              @click="handleButtonClick(button)"
+                              class="w-full p-4 bg-green-500 hover:bg-green-600 text-white rounded-xl transition-colors text-left"
+                            >
+                              <div class="font-semibold">{{ button.label }}</div>
+                              <div class="text-sm opacity-90 mt-1">{{ button.description }}</div>
+                            </button>
+                          </div>
+                        </div>
+                        
+                        <!-- File Layout -->
+                        <div v-else-if="getScreenLayout() === 'file'" class="space-y-4">
+                          <!-- File Grid -->
+                          <div class="grid grid-cols-2 gap-3">
+                            <div class="bg-white p-4 rounded-xl border text-center">
+                              <div class="text-2xl mb-2">📄</div>
+                              <div class="text-sm font-medium">wireframes-v2.sketch</div>
+                              <div class="text-xs text-gray-500">2.4 MB</div>
+                            </div>
+                            <div class="bg-white p-4 rounded-xl border text-center">
+                              <div class="text-2xl mb-2">📊</div>
+                              <div class="text-sm font-medium">project-timeline.pdf</div>
+                              <div class="text-xs text-gray-500">856 KB</div>
+                            </div>
+                          </div>
+                          <!-- Action Buttons -->
+                          <div class="space-y-2">
+                            <button
+                              v-for="button in getScreenButtons()"
+                              :key="button.id"
+                              @click="handleButtonClick(button)"
+                              class="w-full p-4 bg-purple-500 hover:bg-purple-600 text-white rounded-xl transition-colors text-left"
+                            >
+                              <div class="font-semibold">{{ button.label }}</div>
+                              <div class="text-sm opacity-90 mt-1">{{ button.description }}</div>
+                            </button>
+                          </div>
+                        </div>
+                        
+                        <!-- Team Layout -->
+                        <div v-else-if="getScreenLayout() === 'team'" class="space-y-4">
+                          <!-- Team Members -->
+                          <div class="space-y-3">
+                            <div class="bg-white p-4 rounded-xl flex items-center space-x-3">
+                              <div class="w-10 h-10 bg-green-500 rounded-full flex items-center justify-center text-white font-semibold">S</div>
+                              <div class="flex-1">
+                                <div class="font-medium">Sarah Chen</div>
+                                <div class="text-sm text-green-500">● Online</div>
+                              </div>
+                            </div>
+                            <div class="bg-white p-4 rounded-xl flex items-center space-x-3">
+                              <div class="w-10 h-10 bg-blue-500 rounded-full flex items-center justify-center text-white font-semibold">M</div>
+                              <div class="flex-1">
+                                <div class="font-medium">Mike Johnson</div>
+                                <div class="text-sm text-gray-500">● Away</div>
+                              </div>
+                            </div>
+                          </div>
+                          <!-- Action Buttons -->
+                          <div class="space-y-2">
+                            <button
+                              v-for="button in getScreenButtons()"
+                              :key="button.id"
+                              @click="handleButtonClick(button)"
+                              class="w-full p-4 bg-indigo-500 hover:bg-indigo-600 text-white rounded-xl transition-colors text-left"
+                            >
+                              <div class="font-semibold">{{ button.label }}</div>
+                              <div class="text-sm opacity-90 mt-1">{{ button.description }}</div>
+                            </button>
+                          </div>
+                        </div>
+                        
+                        <!-- Form Layout -->
+                        <div v-else-if="getScreenLayout() === 'form'" class="space-y-4">
+                          <div class="bg-white rounded-xl p-4 space-y-4">
+                            <div>
+                              <label class="block text-sm font-medium text-gray-700 mb-2">Title</label>
+                              <input type="text" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="Enter title..." />
+                            </div>
+                            <div>
+                              <label class="block text-sm font-medium text-gray-700 mb-2">Description</label>
+                              <textarea class="w-full p-3 border border-gray-300 rounded-lg h-20" placeholder="Enter description..."></textarea>
+                            </div>
+                            <div>
+                              <label class="block text-sm font-medium text-gray-700 mb-2">Assign to</label>
+                              <select class="w-full p-3 border border-gray-300 rounded-lg">
+                                <option>Sarah Chen</option>
+                                <option>Mike Johnson</option>
+                              </select>
+                            </div>
+                          </div>
+                          <!-- Action Buttons -->
+                          <div class="space-y-2">
+                            <button
+                              v-for="button in getScreenButtons()"
+                              :key="button.id"
+                              @click="handleButtonClick(button)"
+                              class="w-full p-4 bg-orange-500 hover:bg-orange-600 text-white rounded-xl transition-colors text-left"
+                            >
+                              <div class="font-semibold">{{ button.label }}</div>
+                            </button>
+                          </div>
+                        </div>
+                        
+                        <!-- Upload Layout -->
+                        <div v-else-if="getScreenLayout() === 'upload'" class="space-y-4">
+                          <div class="bg-white rounded-xl p-6 border-2 border-dashed border-gray-300 text-center">
+                            <div class="text-4xl mb-4">📁</div>
+                            <div class="font-medium text-gray-700">Drop files here or click to browse</div>
+                            <div class="text-sm text-gray-500 mt-2">Supports PDF, Images, Documents</div>
+                          </div>
+                          <!-- Action Buttons -->
+                          <div class="space-y-2">
+                            <button
+                              v-for="button in getScreenButtons()"
+                              :key="button.id"
+                              @click="handleButtonClick(button)"
+                              class="w-full p-4 bg-teal-500 hover:bg-teal-600 text-white rounded-xl transition-colors text-left"
+                            >
+                              <div class="font-semibold">{{ button.label }}</div>
+                            </button>
+                          </div>
+                        </div>
+                        
+                        <!-- Search Layout -->
+                        <div v-else-if="getScreenLayout() === 'search'" class="space-y-4">
+                          <div class="bg-white rounded-xl p-3">
+                            <input type="text" class="w-full p-3 border border-gray-300 rounded-lg" placeholder="Search messages, files, tasks..." />
+                          </div>
+                          <div class="space-y-2">
+                            <div class="bg-white p-4 rounded-xl">
+                              <div class="font-medium text-gray-800">"wireframes v2" in #design</div>
+                              <div class="text-sm text-gray-500">Found in conversation yesterday</div>
+                            </div>
+                            <div class="bg-white p-4 rounded-xl">
+                              <div class="font-medium text-gray-800">wireframes-v2.sketch</div>
+                              <div class="text-sm text-gray-500">File shared by Sarah</div>
+                            </div>
+                          </div>
+                          <!-- Action Buttons -->
+                          <div class="space-y-2">
+                            <button
+                              v-for="button in getScreenButtons()"
+                              :key="button.id"
+                              @click="handleButtonClick(button)"
+                              class="w-full p-3 bg-gray-500 hover:bg-gray-600 text-white rounded-lg transition-colors text-left text-sm"
+                            >
+                              {{ button.label }}
+                            </button>
+                          </div>
+                        </div>
+                        
+                        <!-- Celebration Layout -->
+                        <div v-else-if="getScreenLayout() === 'celebration'" class="text-center space-y-4">
+                          <div class="text-6xl">🎉</div>
+                          <div class="text-xl font-bold text-gray-800">Task Completed!</div>
+                          <div class="text-gray-600">Great work! The task has been marked as complete.</div>
+                          <!-- Action Buttons -->
+                          <div class="space-y-2 mt-6">
+                            <button
+                              v-for="button in getScreenButtons()"
+                              :key="button.id"
+                              @click="handleButtonClick(button)"
+                              class="w-full p-4 bg-green-500 hover:bg-green-600 text-white rounded-xl transition-colors text-left"
+                            >
+                              <div class="font-semibold">{{ button.label }}</div>
+                            </button>
+                          </div>
+                        </div>
+                        
+                        <!-- Default Layout -->
+                        <div v-else class="space-y-4">
                           <button
                             v-for="button in getScreenButtons()"
                             :key="button.id"
@@ -562,8 +810,8 @@
                         </div>
                       </div>
                         
-                      <!-- Bottom Navigation (if main screen) -->
-                      <div v-if="['chat_screen', 'task_screen', 'file_screen', 'team_screen'].includes(currentScreenData.id)" class="border-t border-gray-200 bg-white px-6 py-4">
+                      <!-- Bottom Navigation (on all screens) -->
+                      <div class="border-t border-gray-200 bg-white px-6 py-4">
                         <div class="flex justify-around">
                           <button 
                             v-for="screen in appScreens.filter(s => ['chat_screen', 'task_screen', 'file_screen', 'team_screen'].includes(s.id))"
