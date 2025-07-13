@@ -45,6 +45,7 @@
         const showTechnicalDetails = ref(false);
         const mermaidDiagram = ref('');
         const mermaidElementId = ref('mermaid-diagram');
+        const recentTransition = ref(null);
         
         const loadApp = async (filename) => {
           try {
@@ -76,10 +77,11 @@
         };
         
         const loadScreen = (screen) => {
+          const previousScreen = selectedScreen.value;
           selectedScreen.value = screen.id;
           currentScreenData.value = screen;
           initializeScreen();
-          updateMermaidDiagram();
+          updateMermaidDiagram(previousScreen);
         };
         
         const initializeScreen = () => {
@@ -169,15 +171,17 @@
               screenHistory.value.push(currentScreenData.value);
               
               // Transition to next screen
+              const previousScreen = selectedScreen.value;
               currentScreenData.value = nextScreen;
               selectedScreen.value = nextScreen.id;
-              updateMermaidDiagram();
+              updateMermaidDiagram(previousScreen);
             }
           }
         };
         
         const goBackToPreviousScreen = () => {
           if (screenHistory.value.length > 0) {
+            const currentScreen = selectedScreen.value;
             const previousScreen = screenHistory.value.pop();
             currentScreenData.value = previousScreen;
             selectedScreen.value = previousScreen.id;
@@ -188,7 +192,7 @@
               timestamp: Date.now()
             });
             
-            updateMermaidDiagram();
+            updateMermaidDiagram(currentScreen);
           }
         };
         
@@ -301,7 +305,7 @@
           return mermaidCode;
         };
         
-        const updateMermaidDiagram = async () => {
+        const updateMermaidDiagram = async (fromScreen = null) => {
           const diagramCode = compileApmlToMermaid();
           if (!diagramCode) return;
           
@@ -309,6 +313,23 @@
           let finalCode = diagramCode;
           if (selectedScreen.value) {
             finalCode += `    class ${selectedScreen.value} currentScreen\n`;
+          }
+          
+          // Add animated transition arrow styling
+          if (fromScreen && fromScreen !== selectedScreen.value) {
+            finalCode += `    class ${fromScreen} recentTransition\n`;
+            finalCode += `    linkStyle ${getTransitionIndex(fromScreen, selectedScreen.value)} stroke:#f59e0b,stroke-width:4px,stroke-dasharray:10,animation:dash 2s linear infinite\n`;
+            
+            // Store recent transition for cleanup
+            recentTransition.value = { from: fromScreen, to: selectedScreen.value };
+            
+            // Clear animation after 3 seconds
+            setTimeout(() => {
+              if (recentTransition.value?.from === fromScreen && recentTransition.value?.to === selectedScreen.value) {
+                recentTransition.value = null;
+                updateMermaidDiagram(); // Re-render without animation
+              }
+            }, 3000);
           }
           
           mermaidDiagram.value = finalCode;
@@ -321,12 +342,50 @@
               try {
                 const { svg } = await mermaid.render(mermaidElementId.value + '-svg', finalCode);
                 element.innerHTML = svg;
+                
+                // Add CSS animation for dashed arrows
+                if (fromScreen && fromScreen !== selectedScreen.value) {
+                  const style = document.createElement('style');
+                  style.textContent = `
+                    @keyframes dash {
+                      to { stroke-dashoffset: -20; }
+                    }
+                  `;
+                  element.appendChild(style);
+                }
               } catch (error) {
                 console.error('Mermaid render error:', error);
                 element.innerHTML = '<p class="text-red-400 text-sm">Error rendering flow diagram</p>';
               }
             }
           }, 100);
+        };
+        
+        const getTransitionIndex = (fromScreen, toScreen) => {
+          // Helper to find the index of the transition arrow for styling
+          if (!currentApml.value?.screens) return 0;
+          
+          let index = 0;
+          const screens = currentApml.value.screens;
+          
+          for (const [screenId, screen] of Object.entries(screens)) {
+            if (screen.user_actions) {
+              const connections = new Set();
+              screen.user_actions.forEach(action => {
+                if (action.next_screen && screens[action.next_screen]) {
+                  connections.add(action.next_screen);
+                }
+              });
+              
+              for (const nextScreen of connections) {
+                if (screenId === fromScreen && nextScreen === toScreen) {
+                  return index;
+                }
+                index++;
+              }
+            }
+          }
+          return 0;
         };
         
         onMounted(() => {
@@ -397,8 +456,8 @@
           </header>
           
           <div class="flex h-screen">
-            <!-- Left Panel: Large Mermaid Diagram + ADE Chat (60%) -->
-            <div class="w-3/5 bg-gray-800 border-r border-gray-700 p-4 overflow-y-auto flex flex-col">
+            <!-- Left Panel: Large Mermaid Diagram + ADE Chat (70%) -->
+            <div class="w-7/10 bg-gray-800 border-r border-gray-700 p-4 overflow-y-auto flex flex-col" style="width: 70%;">
               <!-- Large Mermaid Flow Diagram -->
               <div class="flex-1 mb-6">
                 <h2 class="text-xl font-semibold mb-4">🗺️ App Flow Diagram</h2>
@@ -442,8 +501,8 @@
               </div>
             </div>
             
-            <!-- Right Panel: iPhone App + Technical Details (40%) -->
-            <div class="w-2/5 bg-gray-900 p-4 overflow-y-auto flex flex-col">
+            <!-- Right Panel: iPhone App + Technical Details (30%) -->
+            <div class="w-3/10 bg-gray-900 p-4 overflow-y-auto flex flex-col" style="width: 30%;">
               <!-- iPhone Simulator -->
               <div class="flex items-center justify-center mb-6">
                 <div v-if="!currentScreenData" class="text-center text-gray-400">
