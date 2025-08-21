@@ -1,0 +1,81 @@
+apml_version: 1.0
+metadata:
+  title: "Thrive - Holistic Health Concierge"
+  author: "ADE"
+  created: "2025-07-13T23:15:00Z"
+  app_type: "health_assessment"
+
+screens:
+  welcome:
+    name: "Welcome"
+    type: "onboarding"
+    components:
+      - opening_question:
+          text: "What's on your mind today?"
+          style: "warm_unconditional"
+          personality: "loving_like_your_dog"
+
+  quick_assessment:
+    name: "Quick Check"
+    type: "conversational_form"
+    components:
+      - personalized_questions:
+          count: 5
+          adaptive: true
+          includes: ["year_of_birth", "gender", "height", "weight", "conditions"]
+
+  initial_insights:
+    name: "Some Thoughts"
+    type: "preview_results"
+    components:
+      - preliminary_insights:
+          type: "gentle_observations"
+      - deeper_dive_invitation:
+          text: "Want the full picture?"
+
+  deep_assessment:
+    name: "Deeper Dive"
+    type: "extended_conversation"
+    components:
+      - additional_questions:
+          count: "15-20"
+          fully_personalized: true
+
+  summary_options:
+    name: "Your Options"
+    type: "results_preview"
+    components:
+      - confidence_based_options:
+          format: "not_recommendations"
+          style: "ocean_analysis_relative"
+      - scorecard_preview:
+          type: "summary_insights"
+
+  email_capture:
+    name: "Get Your Report"
+    type: "lead_generation"
+    components:
+      - email_signup:
+          purpose: "pdf_delivery"
+      - download_option:
+          format: "scorecard_pdf"
+
+flows:
+  onboarding_flow:
+    steps:
+      - user_to_app: "user taps 'What's on your mind today?'"
+      - app_to_app: "initialize conversational assessment"
+      - app_to_user: "show chat interface"
+
+  assessment_flow:
+    steps:
+      - user_to_app: "user describes health concerns"
+      - app_to_app: "AI analyzes patterns, asks follow-up questions"
+      - app_to_app: "builds psychological/physical profile"
+      - app_to_user: "reveals insights and recommendations"
+
+  recommendation_flow:
+    steps:
+      - user_to_app: "user views recommendations"
+      - app_to_app: "personalizes protocols based on assessment"
+      - app_to_user: "shows actionable next steps"

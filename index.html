@@ -3,220 +3,281 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ADE - Application Development Environment</title>
+  <title>ADE - App Development Engine</title>
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
   <script src="https://cdn.tailwindcss.com"></script>
   <style>
     body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    .message-enter-active, .message-leave-active { transition: all 0.3s ease; }
+    .message-enter-from { opacity: 0; transform: translateY(10px); }
+    .message-leave-to { opacity: 0; transform: translateY(-10px); }
   </style>
 </head>
 <body>
   <div id="app"></div>
   
   <script>
-    const { createApp, ref, reactive, computed } = Vue;
+    const { createApp, ref, onMounted, nextTick } = Vue;
     
     createApp({
       setup() {
-        const currentStage = ref('ORCH');
-        const appDescription = ref('');
-        const generatedApml = ref('');
-        const wireframes = ref([]);
+        const messages = ref([]);
+        const userInput = ref('');
+        const isConnected = ref(false);
+        const ws = ref(null);
+        const showChat = ref(false);
         
-        const stages = ['ORCH', 'SPEC', 'COMP', 'DEPLOY'];
-        
-        const stageIndex = computed(() => stages.indexOf(currentStage.value));
-        
-        const generateApml = () => {
-          if (!appDescription.value.trim()) return;
+        const connectWebSocket = () => {
+          const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+          const wsUrl = `${protocol}//${window.location.host}`;
           
-          currentStage.value = 'SPEC';
-          generatedApml.value = `apml_version: 1.0
-metadata:
-  title: "${appDescription.value.slice(0, 50)}..."
-  type: "web_application"
-  
-patterns:
-  app_to_user:
-    - "Display generated content"
-    - "Show current status"
-    - "Present deployment options"
-    
-  user_to_app:
-    - "Describe application requirements"
-    - "Select design preferences"  
-    - "Confirm deployment"
-    
-  app_to_app:
-    - "Generate APML specification"
-    - "Compile to Vue components"
-    - "Deploy to hosting platform"`;
-    
-          setTimeout(() => {
-            currentStage.value = 'COMP';
-            wireframes.value = [
-              { name: 'Mobile View', width: 375, height: 667 },
-              { name: 'Desktop View', width: 1200, height: 800 }
-            ];
-            
-            setTimeout(() => {
-              currentStage.value = 'DEPLOY';
-            }, 2000);
-          }, 1500);
+          ws.value = new WebSocket(wsUrl);
+          
+          ws.value.onopen = () => {
+            isConnected.value = true;
+            console.log('Connected to ADE');
+          };
+          
+          ws.value.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            messages.value.push({
+              type: 'assistant',
+              content: data.content,
+              timestamp: Date.now()
+            });
+            scrollToBottom();
+          };
+          
+          ws.value.onclose = () => {
+            isConnected.value = false;
+            console.log('Disconnected from ADE');
+          };
+          
+          ws.value.onerror = (error) => {
+            console.error('WebSocket error:', error);
+          };
         };
         
-        const deployApp = () => {
-          alert('=� App deployed successfully! This is where Railway/Vercel integration would happen.');
+        const sendMessage = () => {
+          if (!userInput.value.trim() || !isConnected.value) return;
+          
+          messages.value.push({
+            type: 'user',
+            content: userInput.value,
+            timestamp: Date.now()
+          });
+          
+          ws.value.send(JSON.stringify({
+            type: 'chat',
+            content: userInput.value
+          }));
+          
+          userInput.value = '';
+          scrollToBottom();
         };
+        
+        const scrollToBottom = () => {
+          nextTick(() => {
+            const chatContainer = document.getElementById('chat-messages');
+            if (chatContainer) {
+              chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+          });
+        };
+        
+        const startChat = () => {
+          showChat.value = true;
+          if (!isConnected.value) {
+            connectWebSocket();
+          }
+          
+          // Welcome message
+          setTimeout(() => {
+            messages.value.push({
+              type: 'assistant',
+              content: '👋 Hello! I\'m ADE - your App Development Engine. I transform conversations into production-ready apps using APML.\n\nTell me about the app you\'d like to build! For example:\n• "I need a team messaging app"\n• "Build a task management tool"\n• "Create a file sharing platform"',
+              timestamp: Date.now()
+            });
+          }, 500);
+        };
+        
+        onMounted(() => {
+          // Auto-connect on page load for demo
+          connectWebSocket();
+        });
         
         return {
-          currentStage,
-          appDescription,
-          generatedApml,
-          wireframes,
-          stages,
-          stageIndex,
-          generateApml,
-          deployApp
+          messages,
+          userInput,
+          isConnected,
+          showChat,
+          sendMessage,
+          startChat
         };
       },
       
       template: `
-        <div class="min-h-screen bg-gray-50">
-          <!-- Header -->
-          <header class="bg-white shadow-sm border-b">
-            <div class="max-w-7xl mx-auto px-4 py-4">
-              <div class="flex items-center justify-between">
-                <h1 class="text-2xl font-bold text-gray-900">
-                  ADE - Application Development Environment
-                </h1>
-                <div class="text-sm text-gray-500">
-                  Built with ADE in 15 minutes �
-                </div>
+        <div class="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 text-white">
+          
+          <!-- Main Interface -->
+          <div v-if="!showChat" class="container mx-auto px-4 py-8">
+            <header class="text-center mb-12">
+              <h1 class="text-5xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+                ADE
+              </h1>
+              <p class="text-2xl text-gray-300 mb-2">
+                App Development Engine
+              </p>
+              <p class="text-lg text-gray-400">
+                Grammar-based app generation • THINK → FEEL → SEE workflow
+              </p>
+            </header>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+              
+              <!-- Start New App -->
+              <div class="bg-gray-800/50 backdrop-blur p-6 rounded-2xl border border-gray-700/50 text-center">
+                <div class="text-4xl mb-4">🚀</div>
+                <h2 class="text-xl font-bold mb-3 text-green-400">Start New App</h2>
+                <p class="text-gray-300 mb-6 text-sm">
+                  Begin a conversation with ADE. Describe your idea and watch it become reality.
+                </p>
+                <button 
+                  @click="startChat"
+                  class="w-full bg-green-600 hover:bg-green-700 px-4 py-3 rounded-lg font-semibold transition-all"
+                >
+                  💬 Chat with ADE
+                </button>
+              </div>
+              
+              <!-- Complete Lifecycle Demo -->
+              <div class="bg-gray-800/50 backdrop-blur p-6 rounded-2xl border border-gray-700/50 text-center">
+                <div class="text-4xl mb-4">🎯</div>
+                <h2 class="text-xl font-bold mb-3 text-purple-400">Lifecycle Demo</h2>
+                <p class="text-gray-300 mb-6 text-sm">
+                  See the complete THINK → FEEL → SEE process using ProjectChat as example.
+                </p>
+                <a 
+                  href="/meta" 
+                  class="w-full inline-block bg-purple-600 hover:bg-purple-700 px-4 py-3 rounded-lg font-semibold transition-all"
+                >
+                  🎬 View Demo
+                </a>
+              </div>
+              
+              <!-- Live Simulator -->
+              <div class="bg-gray-800/50 backdrop-blur p-6 rounded-2xl border border-gray-700/50 text-center">
+                <div class="text-4xl mb-4">📱</div>
+                <h2 class="text-xl font-bold mb-3 text-blue-400">Live Simulator</h2>
+                <p class="text-gray-300 mb-6 text-sm">
+                  Experience ProjectChat at real iPhone scale with flow diagrams and compilation.
+                </p>
+                <a 
+                  href="/simulator" 
+                  class="w-full inline-block bg-blue-600 hover:bg-blue-700 px-4 py-3 rounded-lg font-semibold transition-all"
+                >
+                  🎮 Try Simulator
+                </a>
+              </div>
+              
+              <!-- APML Tools -->
+              <div class="bg-gray-800/50 backdrop-blur p-6 rounded-2xl border border-gray-700/50 text-center">
+                <div class="text-4xl mb-4">🔧</div>
+                <h2 class="text-xl font-bold mb-3 text-orange-400">APML Tools</h2>
+                <p class="text-gray-300 mb-6 text-sm">
+                  Upload and visualize APML files. See structure, flows, and validation.
+                </p>
+                <a 
+                  href="/visualizer" 
+                  class="w-full inline-block bg-orange-600 hover:bg-orange-700 px-4 py-3 rounded-lg font-semibold transition-all"
+                >
+                  📊 Open Tools
+                </a>
               </div>
             </div>
-          </header>
-          
-          <!-- Stage Indicator -->
-          <div class="bg-white border-b">
-            <div class="max-w-7xl mx-auto px-4 py-3">
-              <div class="flex items-center space-x-8">
-                <div v-for="(stage, index) in stages" :key="stage"
-                     class="flex items-center">
-                  <div :class="[
-                    'w-8 h-8 rounded-full flex items-center justify-center text-sm font-semibold',
-                    index <= stageIndex ? 'bg-blue-500 text-white' : 'bg-gray-200 text-gray-500'
-                  ]">
-                    {{ index + 1 }}
-                  </div>
-                  <div class="ml-2 text-sm font-medium"
-                       :class="index <= stageIndex ? 'text-blue-600' : 'text-gray-500'">
-                    {{ stage }}
-                  </div>
-                  <div v-if="index < stages.length - 1" 
-                       class="ml-8 w-16 h-0.5"
-                       :class="index < stageIndex ? 'bg-blue-500' : 'bg-gray-200'">
-                  </div>
+            
+            <!-- Feature Highlights -->
+            <section class="text-center mb-16">
+              <h2 class="text-3xl font-bold mb-8">Why ADE?</h2>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="p-6">
+                  <div class="text-5xl mb-4">⚡</div>
+                  <h3 class="text-xl font-bold mb-3">Grammar + Examples</h3>
+                  <p class="text-gray-400">No searching pattern libraries. Claude knows how to build at any complexity level.</p>
                 </div>
+                <div class="p-6">
+                  <div class="text-5xl mb-4">🧬</div>
+                  <h3 class="text-xl font-bold mb-3">Intent Conservation</h3>
+                  <p class="text-gray-400">APML preserves your intent through all transformations. Regeneration always possible.</p>
+                </div>
+                <div class="p-6">
+                  <div class="text-5xl mb-4">📐</div>
+                  <h3 class="text-xl font-bold mb-3">Real iPhone Scale</h3>
+                  <p class="text-gray-400">390px drives layout. Experience your app at actual device dimensions.</p>
+                </div>
+              </div>
+            </section>
+          </div>
+          
+          <!-- Chat Interface -->
+          <div v-if="showChat" class="h-screen flex flex-col bg-gray-900">
+            
+            <!-- Chat Header -->
+            <header class="bg-gray-800 border-b border-gray-700 p-4 flex items-center justify-between">
+              <div class="flex items-center space-x-3">
+                <button @click="showChat = false" class="text-gray-400 hover:text-white">
+                  ← Back
+                </button>
+                <h1 class="text-xl font-bold">ADE Chat</h1>
+                <div :class="['w-2 h-2 rounded-full', isConnected ? 'bg-green-500' : 'bg-red-500']"></div>
+              </div>
+              <div class="text-sm text-gray-400">
+                {{ isConnected ? 'Connected' : 'Connecting...' }}
+              </div>
+            </header>
+            
+            <!-- Messages -->
+            <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4">
+              <transition-group name="message">
+                <div 
+                  v-for="message in messages"
+                  :key="message.timestamp"
+                  :class="[
+                    'max-w-2xl p-4 rounded-2xl',
+                    message.type === 'user' 
+                      ? 'bg-blue-600 text-white ml-auto' 
+                      : 'bg-gray-800 text-gray-100 mr-auto border border-gray-700'
+                  ]"
+                >
+                  <div class="text-xs opacity-70 mb-2">
+                    {{ message.type === 'user' ? 'You' : 'ADE' }}
+                  </div>
+                  <div class="whitespace-pre-wrap">{{ message.content }}</div>
+                </div>
+              </transition-group>
+            </div>
+            
+            <!-- Input -->
+            <div class="border-t border-gray-700 p-4">
+              <div class="flex space-x-3">
+                <input
+                  v-model="userInput"
+                  @keyup.enter="sendMessage"
+                  :disabled="!isConnected"
+                  placeholder="Describe the app you want to build..."
+                  class="flex-1 px-4 py-3 bg-gray-800 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
+                />
+                <button
+                  @click="sendMessage"
+                  :disabled="!isConnected || !userInput.trim()"
+                  class="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-colors"
+                >
+                  Send
+                </button>
               </div>
             </div>
           </div>
           
-          <!-- Main Content -->
-          <main class="max-w-7xl mx-auto px-4 py-8">
-            <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
-              
-              <!-- Chat Panel -->
-              <div class="bg-white rounded-lg shadow p-6">
-                <h2 class="text-lg font-semibold mb-4">=� Describe Your App</h2>
-                <textarea v-model="appDescription"
-                          placeholder="I want to build a task management app with drag and drop, real-time collaboration, and mobile sync..."
-                          class="w-full h-32 p-3 border rounded-lg resize-none focus:ring-2 focus:ring-blue-500"
-                          :disabled="currentStage !== 'ORCH'">
-                </textarea>
-                <button @click="generateApml"
-                        :disabled="!appDescription.trim() || currentStage !== 'ORCH'"
-                        class="mt-4 w-full bg-blue-500 text-white py-2 px-4 rounded-lg hover:bg-blue-600 disabled:bg-gray-300">
-                  Generate APML Spec
-                </button>
-              </div>
-              
-              <!-- Visualization Panel -->
-              <div class="bg-white rounded-lg shadow p-6">
-                <h2 class="text-lg font-semibold mb-4"><� Visual Preview</h2>
-                <div v-if="currentStage === 'ORCH'" class="text-center text-gray-400 py-8">
-                  Wireframes will appear here after APML generation
-                </div>
-                <div v-else-if="currentStage === 'SPEC'" class="text-center py-8">
-                  <div class="animate-spin w-8 h-8 border-4 border-blue-500 border-t-transparent rounded-full mx-auto mb-2"></div>
-                  <div class="text-sm text-gray-600">Generating wireframes...</div>
-                </div>
-                <div v-else class="space-y-4">
-                  <div v-for="wireframe in wireframes" :key="wireframe.name"
-                       class="border rounded-lg p-4">
-                    <h3 class="font-medium mb-2">{{ wireframe.name }}</h3>
-                    <div class="bg-gray-100 rounded border-2 border-dashed border-gray-300 flex items-center justify-center"
-                         :style="{ height: Math.min(wireframe.height * 0.3, 200) + 'px' }">
-                      <div class="text-center text-gray-500">
-                        <div class="text-xs">{{ wireframe.width }}�{{ wireframe.height }}</div>
-                        <div class="text-xs mt-1">App Preview</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-              
-              <!-- APML/Deploy Panel -->
-              <div class="bg-white rounded-lg shadow p-6">
-                <h2 class="text-lg font-semibold mb-4">� APML & Deploy</h2>
-                <div v-if="currentStage === 'ORCH'" class="text-center text-gray-400 py-8">
-                  APML specification will appear here
-                </div>
-                <div v-else-if="generatedApml" class="space-y-4">
-                  <div>
-                    <h3 class="font-medium mb-2">Generated APML:</h3>
-                    <pre class="text-xs bg-gray-50 p-3 rounded border overflow-auto max-h-40">{{ generatedApml }}</pre>
-                  </div>
-                  <div v-if="currentStage === 'DEPLOY'" class="pt-4 border-t">
-                    <button @click="deployApp"
-                            class="w-full bg-green-500 text-white py-2 px-4 rounded-lg hover:bg-green-600">
-                      =� Deploy to Railway
-                    </button>
-                  </div>
-                  <div v-else-if="currentStage === 'COMP'" class="text-center py-4">
-                    <div class="animate-spin w-6 h-6 border-4 border-green-500 border-t-transparent rounded-full mx-auto mb-2"></div>
-                    <div class="text-sm text-gray-600">Compiling components...</div>
-                  </div>
-                </div>
-              </div>
-              
-            </div>
-            
-            <!-- Case Study Footer -->
-            <div class="mt-12 bg-blue-50 rounded-lg p-6">
-              <h3 class="text-lg font-semibold text-blue-900 mb-2">
-                <� Meta Achievement: ADE Built Itself!
-              </h3>
-              <p class="text-blue-800 mb-4">
-                This application was built using ADE's own methodology in just 15 minutes, 
-                proving that intent-first development can create complex, self-referential systems.
-              </p>
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div class="bg-white rounded p-3">
-                  <div class="font-semibold">� Build Time</div>
-                  <div class="text-blue-600">15 minutes</div>
-                </div>
-                <div class="bg-white rounded p-3">
-                  <div class="font-semibold">=� Files Generated</div>
-                  <div class="text-blue-600">23 production files</div>
-                </div>
-                <div class="bg-white rounded p-3">
-                  <div class="font-semibold">= Bugs During Build</div>
-                  <div class="text-blue-600">0 (zero!)</div>
-                </div>
-              </div>
-            </div>
-          </main>
         </div>
       `
     }).mount('#app');

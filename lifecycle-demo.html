@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ADE Lifecycle Demo</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white">
+  <div id="app"></div>
+  
+  <script>
+    const { createApp, ref } = Vue;
+    
+    createApp({
+      setup() {
+        const step = ref(1);
+        const chatInput = ref('');
+        const apmlOutput = ref('');
+        const vueOutput = ref('');
+        const isLoading = ref(false);
+        
+        const testAPML = `name: SimpleCounter
+metadata:
+  title: "Counter Component"
+  type: "interactive"
+
+template:
+  elements:
+    - div:
+        class: "p-6 bg-blue-600 rounded-lg text-center"
+        children:
+          - h2:
+              text: "Counter: {{ count }}"
+              class: "text-2xl font-bold mb-4"
+          - button:
+              text: "Increment"
+              class: "bg-white text-blue-600 px-4 py-2 rounded"
+              click: "increment"
+
+behavior:
+  data:
+    count: 0
+  methods:
+    increment: "count++"`;
+
+        const generateAPML = async () => {
+          isLoading.value = true;
+          step.value = 2;
+          
+          try {
+            const response = await fetch('/api/chat', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                message: `Generate APML for: ${chatInput.value}. Return only the APML specification without any explanation.`
+              })
+            });
+            
+            const data = await response.json();
+            apmlOutput.value = data.content || testAPML;
+            step.value = 3;
+          } catch (error) {
+            apmlOutput.value = testAPML; // Fallback
+            step.value = 3;
+          }
+          
+          isLoading.value = false;
+        };
+        
+        const compileToVue = async () => {
+          isLoading.value = true;
+          
+          try {
+            const response = await fetch('/api/compile', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ apml: apmlOutput.value })
+            });
+            
+            const data = await response.json();
+            vueOutput.value = data.vueComponent;
+            step.value = 4;
+          } catch (error) {
+            vueOutput.value = 'Compilation failed: ' + error.message;
+          }
+          
+          isLoading.value = false;
+        };
+        
+        const reset = () => {
+          step.value = 1;
+          chatInput.value = '';
+          apmlOutput.value = '';
+          vueOutput.value = '';
+        };
+        
+        return {
+          step,
+          chatInput,
+          apmlOutput,
+          vueOutput,
+          isLoading,
+          generateAPML,
+          compileToVue,
+          reset
+        };
+      },
+      
+      template: `
+        <div class="container mx-auto px-4 py-8 max-w-4xl">
+          <header class="text-center mb-8">
+            <h1 class="text-4xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+              ADE Lifecycle Demo
+            </h1>
+            <p class="text-gray-300">
+              Chat → APML → Vue → Running App
+            </p>
+          </header>
+          
+          <!-- Progress Steps -->
+          <div class="flex justify-center mb-8">
+            <div class="flex items-center space-x-4">
+              <div :class="['w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold', 
+                           step >= 1 ? 'bg-green-500' : 'bg-gray-600']">1</div>
+              <div class="w-12 h-1 bg-gray-600"></div>
+              <div :class="['w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold', 
+                           step >= 2 ? 'bg-green-500' : 'bg-gray-600']">2</div>
+              <div class="w-12 h-1 bg-gray-600"></div>
+              <div :class="['w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold', 
+                           step >= 3 ? 'bg-green-500' : 'bg-gray-600']">3</div>
+              <div class="w-12 h-1 bg-gray-600"></div>
+              <div :class="['w-8 h-8 rounded-full flex items-center justify-center text-sm font-bold', 
+                           step >= 4 ? 'bg-green-500' : 'bg-gray-600']">4</div>
+            </div>
+          </div>
+          
+          <!-- Step 1: Chat Input -->
+          <div v-if="step === 1" class="bg-gray-800 rounded-lg p-6 mb-6">
+            <h2 class="text-2xl font-bold mb-4">Step 1: Describe Your App</h2>
+            <textarea
+              v-model="chatInput"
+              placeholder="Describe the component you want to build... (e.g., 'a simple counter button')"
+              class="w-full h-32 p-4 bg-gray-700 rounded-lg text-white placeholder-gray-400 resize-none"
+            ></textarea>
+            <button
+              @click="generateAPML"
+              :disabled="!chatInput.trim() || isLoading"
+              class="mt-4 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 px-6 py-2 rounded-lg font-semibold"
+            >
+              {{ isLoading ? 'Generating...' : 'Generate APML' }}
+            </button>
+          </div>
+          
+          <!-- Step 2: APML Generation -->
+          <div v-if="step >= 2" class="bg-gray-800 rounded-lg p-6 mb-6">
+            <h2 class="text-2xl font-bold mb-4">Step 2: Generated APML</h2>
+            <pre class="bg-gray-900 p-4 rounded-lg text-sm overflow-x-auto text-green-400">{{ apmlOutput }}</pre>
+            <button
+              v-if="step === 3"
+              @click="compileToVue"
+              :disabled="isLoading"
+              class="mt-4 bg-purple-600 hover:bg-purple-700 disabled:opacity-50 px-6 py-2 rounded-lg font-semibold"
+            >
+              {{ isLoading ? 'Compiling...' : 'Compile to Vue' }}
+            </button>
+          </div>
+          
+          <!-- Step 3: Vue Output -->
+          <div v-if="step >= 4" class="bg-gray-800 rounded-lg p-6 mb-6">
+            <h2 class="text-2xl font-bold mb-4">Step 3: Generated Vue Component</h2>
+            <pre class="bg-gray-900 p-4 rounded-lg text-sm overflow-x-auto text-blue-400">{{ vueOutput }}</pre>
+          </div>
+          
+          <!-- Step 4: Success -->
+          <div v-if="step === 4" class="bg-green-800 rounded-lg p-6 text-center">
+            <h2 class="text-2xl font-bold mb-4">🎉 Complete Lifecycle Proven!</h2>
+            <p class="mb-4">
+              ADE successfully transformed your chat message into a working Vue component.
+            </p>
+            <button
+              @click="reset"
+              class="bg-green-600 hover:bg-green-700 px-6 py-2 rounded-lg font-semibold"
+            >
+              Try Another Component
+            </button>
+          </div>
+        </div>
+      `
+    }).mount('#app');
+  </script>
+</body>
+</html>

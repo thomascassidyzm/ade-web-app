@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ADE - Magic Interface (Live)</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <style>
+    .draggable { cursor: move; }
+    .phone-simulator {
+      width: 390px;
+      height: 844px;
+      background: linear-gradient(145deg, #1f2937, #374151);
+      border-radius: 30px;
+      border: 8px solid #4b5563;
+      position: relative;
+      overflow: hidden;
+    }
+    .phone-notch {
+      width: 120px;
+      height: 25px;
+      background: #000;
+      border-radius: 0 0 15px 15px;
+      position: absolute;
+      top: 0;
+      left: 50%;
+      transform: translateX(-50%);
+    }
+  </style>
+</head>
+<body class="bg-gray-900 text-white overflow-hidden h-screen">
+  <div id="app"></div>
+  
+  <script>
+    mermaid.initialize({ 
+      theme: 'dark',
+      startOnLoad: false,
+      flowchart: { curve: 'basis' }
+    });
+    
+    const { createApp, ref, onMounted, nextTick } = Vue;
+    
+    createApp({
+      setup() {
+        const messages = ref([]);
+        const userInput = ref('');
+        const showChat = ref(true);
+        const chatPosition = ref({ x: 50, y: 50 });
+        const isDragging = ref(false);
+        const isThinking = ref(false);
+        const currentScreen = ref('start_here');
+        const mermaidDiagram = ref('graph TD\n  A[Start Here] --> B[Begin Building]');
+        const appStructure = ref({
+          screens: ['start_here'],
+          clusters: {
+            auth: ['signin_signup', 'account_details', 'settings'],
+            admin: ['admin_dashboard', 'user_management', 'system_config'], 
+            anon: ['public_home', 'about', 'contact']
+          }
+        });
+        
+        const isConnected = ref(false);
+        const ws = ref(null);
+        
+        const connectWebSocket = () => {
+          const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+          const wsUrl = `${protocol}//${window.location.host}`;
+          
+          ws.value = new WebSocket(wsUrl);
+          
+          ws.value.onopen = () => {
+            isConnected.value = true;
+            addMessage('assistant', 'What do you want to build?');
+          };
+          
+          ws.value.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            isThinking.value = false;
+            addMessage('assistant', data.content);
+            
+            // Process Claude's APML updates if available
+            if (data.apmlUpdate) {
+              updateFromAPMLStructure(data.apmlUpdate);
+            } else {
+              crystallizeAPML(data.content);
+            }
+          };
+          
+          ws.value.onclose = () => {
+            isConnected.value = false;
+          };
+        };
+        
+        const addMessage = (type, content) => {
+          messages.value.push({
+            type,
+            content,
+            timestamp: Date.now()
+          });
+          
+          // Auto-scroll to bottom
+          setTimeout(() => {
+            const chatContainer = document.getElementById('chat-messages');
+            if (chatContainer) {
+              chatContainer.scrollTop = chatContainer.scrollHeight;
+            }
+          }, 100);
+        };
+        
+        const sendMessage = () => {
+          if (!userInput.value.trim()) return;
+          
+          addMessage('user', userInput.value);
+          crystallizeAPML(userInput.value);
+          
+          if (isConnected.value) {
+            isThinking.value = true;
+            ws.value.send(JSON.stringify({
+              type: 'chat',
+              content: userInput.value
+            }));
+          }
+          
+          userInput.value = '';
+        };
+        
+        const updateFromAPMLStructure = (apmlUpdate) => {
+          console.log('Processing APML update from Claude:', apmlUpdate);
+          
+          if (apmlUpdate.screens) {
+            appStructure.value.screens = [...new Set([...appStructure.value.screens, ...apmlUpdate.screens])];
+          }
+          
+          if (apmlUpdate.app_context) {
+            console.log('App context:', apmlUpdate.app_context);
+          }
+          
+          updateMermaidDiagram();
+        };
+        
+        const crystallizeAPML = (input) => {
+          console.log('Crystallizing APML for:', input);
+          
+          // Auto-detect app patterns and update structure
+          const text = input.toLowerCase();
+          const newScreens = [...appStructure.value.screens];
+          
+          // Enhanced pattern detection
+          if (text.includes('health') || text.includes('diagnostic') || text.includes('medical')) {
+            newScreens.push('welcome', 'assessment', 'results', 'recommendations');
+            console.log('Added health screens');
+          }
+          if (text.includes('mind') && text.includes('body') && text.includes('questionnaire')) {
+            newScreens.push('mind_body_choice', 'mind_questionnaire', 'body_questionnaire');
+            console.log('Added mind/body questionnaire screens');
+          }
+          if (text.includes('questionnaire') && (text.includes('results') || text.includes('protocol'))) {
+            newScreens.push('questionnaire_list', 'questionnaire_detail', 'results_report', 'my_protocols');
+            console.log('Added questionnaire flow screens');
+          }
+          if (text.includes('booking') || text.includes('book') || text.includes('tests')) {
+            newScreens.push('book_tests', 'booking_confirm', 'test_selection');
+            console.log('Added booking screens');
+          }
+          if (text.includes('retake') || text.includes('progress') || text.includes('history')) {
+            newScreens.push('progress_view', 'history_comparison', 'retake_option');
+            console.log('Added progress tracking screens');
+          }
+          if (text.includes('mind questionnaire') || text.includes('mental') || text.includes('psychological')) {
+            newScreens.push('mind_assessment', 'cognitive_questions', 'mood_tracking');
+            console.log('Added mind assessment screens');
+          }
+          if (text.includes('body questionnaire') || text.includes('physical') || text.includes('symptoms')) {
+            newScreens.push('body_assessment', 'symptom_tracker', 'physical_health');
+            console.log('Added body assessment screens');
+          }
+          if (text.includes('social') || text.includes('message') || text.includes('chat')) {
+            newScreens.push('feed', 'messages', 'friends');
+          }
+          if (text.includes('shop') || text.includes('store') || text.includes('buy')) {
+            newScreens.push('browse', 'cart', 'checkout');
+          }
+          
+          appStructure.value.screens = [...new Set(newScreens)];
+          console.log('Updated screens:', appStructure.value.screens);
+          updateMermaidDiagram();
+        };
+        
+        const updateMermaidDiagram = () => {
+          const screens = appStructure.value.screens;
+          
+          if (screens.length <= 1) {
+            mermaidDiagram.value = 'flowchart TD\n  A[Start Building] --> B[Describe Your App]';
+            renderMermaid();
+            return;
+          }
+          
+          // Generate beautiful complex diagram using GitHub Railway code
+          let mermaidCode = 'flowchart TD\n';
+          
+          // Define main screens with special styling (health app specific)
+          const mainScreens = ['welcome', 'mind_body_choice', 'results', 'recommendations'];
+          
+          // Add screen nodes with emojis and styling
+          screens.forEach((screenId, index) => {
+            if (screenId === 'start_here') return; // Skip default
+            
+            const isMain = mainScreens.includes(screenId);
+            const cleanName = screenId.replace(/_/g, ' ').replace(/^./, c => c.toUpperCase());
+            
+            // Add appropriate emojis based on screen type
+            let emoji = '📱';
+            if (screenId.includes('welcome')) emoji = '🏠';
+            else if (screenId.includes('mind')) emoji = '🧠';
+            else if (screenId.includes('body')) emoji = '💪';
+            else if (screenId.includes('assessment')) emoji = '📋';
+            else if (screenId.includes('result')) emoji = '📊';
+            else if (screenId.includes('recommendation')) emoji = '⚡';
+            else if (screenId.includes('choice')) emoji = '🔄';
+            
+            if (isMain) {
+              mermaidCode += `    ${screenId}["${emoji} ${cleanName}"]:::mainScreen\n`;
+            } else {
+              mermaidCode += `    ${screenId}["${emoji} ${cleanName}"]:::flowScreen\n`;
+            }
+          });
+          
+          // Add intelligent connections based on app flow
+          const screenArray = screens.filter(s => s !== 'start_here');
+          
+          // Connect welcome to choice
+          if (screenArray.includes('welcome') && screenArray.includes('mind_body_choice')) {
+            mermaidCode += `    welcome --> mind_body_choice\n`;
+          }
+          
+          // Connect choice to assessments
+          if (screenArray.includes('mind_body_choice')) {
+            if (screenArray.includes('mind_assessment')) {
+              mermaidCode += `    mind_body_choice --> mind_assessment\n`;
+            }
+            if (screenArray.includes('body_assessment')) {
+              mermaidCode += `    mind_body_choice --> body_assessment\n`;
+            }
+          }
+          
+          // Connect assessments to results
+          screenArray.forEach(screen => {
+            if (screen.includes('assessment') && screenArray.includes('results')) {
+              mermaidCode += `    ${screen} --> results\n`;
+            }
+          });
+          
+          // Connect results to recommendations
+          if (screenArray.includes('results') && screenArray.includes('recommendations')) {
+            mermaidCode += `    results --> recommendations\n`;
+          }
+          
+          // Add some complex cross-connections for visual richness
+          if (screenArray.includes('mind_assessment') && screenArray.includes('body_assessment')) {
+            mermaidCode += `    mind_assessment -.-> body_assessment\n`;
+          }
+          
+          // Add beautiful styling
+          mermaidCode += `
+    classDef mainScreen fill:#10b981,stroke:#059669,stroke-width:3px,color:#fff
+    classDef flowScreen fill:#3b82f6,stroke:#2563eb,stroke-width:2px,color:#fff
+    classDef currentScreen fill:#f59e0b,stroke:#d97706,stroke-width:4px,color:#000
+  `;
+          
+          mermaidDiagram.value = mermaidCode;
+          renderMermaid();
+        };
+        
+        const renderMermaid = async () => {
+          await nextTick();
+          const element = document.getElementById('mermaid-container');
+          if (element) {
+            element.innerHTML = '';
+            try {
+              const { svg } = await mermaid.render('mermaid-graph', mermaidDiagram.value);
+              element.innerHTML = svg;
+              
+              // Add click handlers to mermaid nodes for navigation
+              setTimeout(() => {
+                const nodes = element.querySelectorAll('.node');
+                nodes.forEach(node => {
+                  node.style.cursor = 'pointer';
+                  node.style.transition = 'transform 0.2s ease';
+                  node.style.position = 'relative'; // Fix positioning
+                  
+                  node.addEventListener('mouseenter', () => {
+                    node.style.opacity = '0.8';
+                  });
+                  
+                  node.addEventListener('mouseleave', () => {
+                    node.style.opacity = '1';
+                  });
+                  
+                  node.addEventListener('click', () => {
+                    const nodeText = node.textContent.toLowerCase().replace(/[^a-z]/g, '');
+                    navigateToScreen(nodeText);
+                    
+                    // Visual feedback
+                    node.style.opacity = '0.6';
+                    setTimeout(() => {
+                      node.style.opacity = '1';
+                    }, 150);
+                  });
+                });
+              }, 100);
+            } catch (error) {
+              console.error('Mermaid render error:', error);
+              element.innerHTML = '<p class="text-red-400">Diagram loading...</p>';
+            }
+          }
+        };
+        
+        const navigateToScreen = (screenName) => {
+          currentScreen.value = screenName;
+          console.log('Navigated to:', screenName);
+        };
+        
+        const getPhoneScreenContent = () => {
+          const screen = currentScreen.value;
+          
+          const screens = {
+            start_here: {
+              title: 'Thrive',
+              content: "What's on your mind today?",
+              button: 'Start Assessment',
+              emoji: '🌱'
+            },
+            welcome: {
+              title: 'Welcome to Thrive',
+              content: "What's on your mind today?",
+              button: 'Begin Journey',
+              emoji: '🏠'
+            },
+            mindassessment: {
+              title: 'Mind Assessment',
+              content: 'How are you feeling mentally?',
+              button: 'Continue Questions',
+              emoji: '🧠'
+            },
+            bodyassessment: {
+              title: 'Body Assessment',
+              content: 'How is your physical health?',
+              button: 'Next Question',
+              emoji: '💪'
+            },
+            mindbodychoice: {
+              title: 'Choose Your Path',
+              content: 'Explore your mind or body?',
+              button: 'Mind | Body',
+              emoji: '🔄'
+            },
+            results: {
+              title: 'Your Results',
+              content: 'Based on your responses...',
+              button: 'View Full Report',
+              emoji: '📊'
+            },
+            recommendations: {
+              title: 'Recommendations',
+              content: 'Personalized options for you',
+              button: 'Explore Options',
+              emoji: '⚡'
+            }
+          };
+          
+          return screens[screen] || {
+            title: 'Thrive',
+            content: screen.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase()),
+            button: 'Continue',
+            emoji: '✨'
+          };
+        };
+        
+        // Drag functionality
+        const startDrag = (event) => {
+          isDragging.value = true;
+          const rect = event.target.getBoundingClientRect();
+          const offsetX = event.clientX - rect.left;
+          const offsetY = event.clientY - rect.top;
+          
+          const onMouseMove = (e) => {
+            if (isDragging.value) {
+              chatPosition.value = {
+                x: e.clientX - offsetX,
+                y: e.clientY - offsetY
+              };
+            }
+          };
+          
+          const onMouseUp = () => {
+            isDragging.value = false;
+            document.removeEventListener('mousemove', onMouseMove);
+            document.removeEventListener('mouseup', onMouseUp);
+          };
+          
+          document.addEventListener('mousemove', onMouseMove);
+          document.addEventListener('mouseup', onMouseUp);
+        };
+        
+        onMounted(() => {
+          connectWebSocket();
+          updateMermaidDiagram();
+        });
+        
+        return {
+          messages,
+          userInput,
+          showChat,
+          chatPosition,
+          currentScreen,
+          isConnected,
+          isThinking,
+          sendMessage,
+          startDrag,
+          navigateToScreen,
+          getPhoneScreenContent
+        };
+      },
+      
+      template: `
+        <div class="h-screen flex bg-gray-900">
+          
+          <!-- Left Pane: Mermaid Map (70%) -->
+          <div class="w-[70%] bg-gray-800 border-r border-gray-700 relative">
+            <div class="p-4 border-b border-gray-700">
+              <h2 class="text-xl font-bold">Live App Structure</h2>
+              <p class="text-sm text-gray-400">Click nodes to navigate • Watch it grow as we chat</p>
+            </div>
+            <div class="p-4 h-full overflow-auto">
+              <div id="mermaid-container" class="w-full h-full"></div>
+            </div>
+          </div>
+          
+          <!-- Right Pane: iPhone Simulator (30%) -->
+          <div class="w-[30%] bg-gray-900 flex items-center justify-center">
+            <div class="phone-simulator">
+              <div class="phone-notch"></div>
+              <div class="p-6 pt-12 h-full flex flex-col">
+                <!-- Status Bar -->
+                <div class="flex justify-between items-center mb-8 text-white text-sm">
+                  <span>9:41</span>
+                  <span>●●●●●</span>
+                </div>
+                
+                <!-- Screen Content -->
+                <div class="flex-1 flex flex-col items-center justify-center text-center text-white px-4">
+                  <div class="text-6xl mb-6">{{ getPhoneScreenContent().emoji }}</div>
+                  <h1 class="text-xl font-bold mb-4">{{ getPhoneScreenContent().title }}</h1>
+                  <p class="text-gray-300 mb-8 leading-relaxed">{{ getPhoneScreenContent().content }}</p>
+                  <button 
+                    @click="navigateToScreen('results')"
+                    class="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 px-6 py-3 rounded-full font-semibold shadow-lg transform transition hover:scale-105"
+                  >
+                    {{ getPhoneScreenContent().button }}
+                  </button>
+                  
+                  <!-- Current screen indicator -->
+                  <div class="mt-6 text-xs text-gray-500">
+                    Screen: {{ currentScreen.replace(/_/g, ' ') }}
+                  </div>
+                </div>
+                
+                <!-- Bottom Navigation -->
+                <div class="flex justify-around py-4 border-t border-gray-600">
+                  <button @click="navigateToScreen('home')" class="text-blue-400">🏠</button>
+                  <button @click="navigateToScreen('search')" class="text-gray-400">🔍</button>
+                  <button @click="navigateToScreen('profile')" class="text-gray-400">👤</button>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Floating Chat Window -->
+          <div 
+            v-if="showChat"
+            :style="{ 
+              left: chatPosition.x + 'px', 
+              top: chatPosition.y + 'px',
+              position: 'fixed',
+              zIndex: 1000
+            }"
+            class="w-[500px] h-[600px] bg-gray-800 border border-gray-600 rounded-lg shadow-2xl flex flex-col"
+          >
+            <!-- Chat Header -->
+            <div 
+              @mousedown="startDrag"
+              class="p-3 border-b border-gray-600 cursor-move bg-gray-700 rounded-t-lg flex justify-between items-center"
+            >
+              <span class="font-semibold">ADE Chat</span>
+              <div class="flex space-x-2">
+                <button @click="showChat = false" class="text-gray-400 hover:text-white">✕</button>
+              </div>
+            </div>
+            
+            <!-- Messages -->
+            <div class="flex-1 overflow-y-auto p-3 space-y-2" id="chat-messages">
+              <div 
+                v-for="message in messages"
+                :key="message.timestamp"
+                :class="[
+                  'p-2 rounded text-sm max-w-[80%]',
+                  message.type === 'user' 
+                    ? 'bg-blue-600 ml-auto' 
+                    : 'bg-gray-700 mr-auto'
+                ]"
+              >
+                {{ message.content }}
+              </div>
+              
+              <!-- Thinking indicator -->
+              <div v-if="isThinking" class="p-2 rounded text-sm max-w-[80%] bg-gray-700 mr-auto">
+                <span class="text-gray-400">ADE is thinking...</span>
+              </div>
+            </div>
+            
+            <!-- Input -->
+            <div class="p-3 border-t border-gray-600">
+              <div class="flex space-x-2">
+                <input
+                  v-model="userInput"
+                  @keyup.enter="sendMessage"
+                  placeholder="Describe your app..."
+                  class="flex-1 px-2 py-1 bg-gray-700 rounded text-sm text-white placeholder-gray-400 focus:outline-none"
+                />
+                <button
+                  @click="sendMessage"
+                  :disabled="!userInput.trim()"
+                  class="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded text-sm font-semibold"
+                >
+                  Send
+                </button>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Chat Toggle (when hidden) -->
+          <button 
+            v-if="!showChat"
+            @click="showChat = true"
+            class="fixed bottom-6 right-6 w-16 h-16 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center text-2xl shadow-lg z-50"
+          >
+            💬
+          </button>
+          
+        </div>
+      `
+    }).mount('#app');
+  </script>
+</body>
+</html>

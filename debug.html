@@ -1,0 +1,74 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Debug - Vue App</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-gray-900 text-white p-8">
+  <div id="app"></div>
+  
+  <script>
+    // Test basic Vue mounting
+    console.log('Vue loaded:', typeof Vue);
+    console.log('Creating Vue app...');
+    
+    const { createApp, ref } = Vue;
+    
+    try {
+      const app = createApp({
+        setup() {
+          const message = ref('Vue 3 is working!');
+          const count = ref(0);
+          
+          const increment = () => {
+            count.value++;
+          };
+          
+          return {
+            message,
+            count,
+            increment
+          };
+        },
+        
+        template: `
+          <div class="text-center">
+            <h1 class="text-4xl font-bold mb-4 text-green-400">{{ message }}</h1>
+            <p class="text-xl mb-4">Count: {{ count }}</p>
+            <button 
+              @click="increment"
+              class="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded"
+            >
+              Click me!
+            </button>
+            <div class="mt-8">
+              <h2 class="text-2xl mb-4">Diagnostics:</h2>
+              <ul class="text-left max-w-md mx-auto space-y-2">
+                <li>✅ Vue 3 CDN loaded</li>
+                <li>✅ TailwindCSS loaded</li>
+                <li>✅ App mounted successfully</li>
+                <li>✅ Reactivity working</li>
+              </ul>
+            </div>
+          </div>
+        `
+      });
+      
+      app.mount('#app');
+      console.log('Vue app mounted successfully!');
+      
+    } catch (error) {
+      console.error('Vue mounting error:', error);
+      document.getElementById('app').innerHTML = `
+        <div class="text-red-400">
+          <h1>Vue Error</h1>
+          <p>${error.message}</p>
+        </div>
+      `;
+    }
+  </script>
+</body>
+</html>

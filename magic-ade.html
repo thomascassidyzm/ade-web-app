@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ADE - The Magic Experience</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body class="bg-gray-900 text-white overflow-hidden">
+  <div id="app"></div>
+  
+  <script>
+    // Initialize Mermaid
+    mermaid.initialize({ 
+      theme: 'dark',
+      startOnLoad: false,
+      flowchart: { curve: 'basis' }
+    });
+    
+    const { createApp, ref, onMounted, watch, nextTick } = Vue;
+    
+    createApp({
+      setup() {
+        const messages = ref([]);
+        const userInput = ref('');
+        const currentAPML = ref('');
+        const mermaidDiagram = ref('graph TD\n  A[Start Here] --> B[Tell me about your app]');
+        const isConnected = ref(false);
+        const ws = ref(null);
+        const phase = ref('behavior'); // behavior | design | deploy
+        
+        // Real-time APML crystallization
+        const crystallizeAPML = (conversation) => {
+          // Extract app structure from conversation
+          const screens = [];
+          const features = [];
+          
+          // Simple keyword detection for now - will enhance with Claude
+          if (conversation.includes('login') || conversation.includes('sign in')) {
+            screens.push('login');
+          }
+          if (conversation.includes('home') || conversation.includes('main')) {
+            screens.push('home');
+          }
+          if (conversation.includes('profile') || conversation.includes('account')) {
+            screens.push('profile');
+          }
+          if (conversation.includes('recipe') || conversation.includes('food')) {
+            screens.push('recipes');
+            features.push('recipe_sharing');
+          }
+          if (conversation.includes('message') || conversation.includes('chat')) {
+            screens.push('messages');
+            features.push('messaging');
+          }
+          
+          // Generate APML
+          const apml = {
+            app_name: extractAppName(conversation),
+            screens: screens.map(screen => ({ name: screen, type: 'screen' })),
+            features: features,
+            flows: generateFlows(screens)
+          };
+          
+          currentAPML.value = JSON.stringify(apml, null, 2);
+          updateMermaidDiagram(screens);
+        };
+        
+        const extractAppName = (text) => {
+          // Simple extraction - enhance with Claude
+          if (text.includes('recipe')) return 'RecipeShare';
+          if (text.includes('chat') || text.includes('message')) return 'ChatApp';
+          if (text.includes('task') || text.includes('todo')) return 'TaskManager';
+          return 'MyApp';
+        };
+        
+        const generateFlows = (screens) => {
+          const flows = [];
+          if (screens.includes('login') && screens.includes('home')) {
+            flows.push({ from: 'login', to: 'home', trigger: 'successful_login' });
+          }
+          if (screens.includes('home') && screens.includes('profile')) {
+            flows.push({ from: 'home', to: 'profile', trigger: 'profile_tap' });
+          }
+          return flows;
+        };
+        
+        const updateMermaidDiagram = (screens) => {
+          let diagram = 'graph TD\\n';
+          
+          if (screens.length === 0) {
+            diagram += '  A[Start Here] --> B[Tell me about your app]';
+          } else {
+            screens.forEach((screen, index) => {
+              const nodeId = String.fromCharCode(65 + index); // A, B, C...
+              diagram += \`  \${nodeId}[\${screen.charAt(0).toUpperCase() + screen.slice(1)}]\\n\`;
+              
+              if (index < screens.length - 1) {
+                const nextNodeId = String.fromCharCode(65 + index + 1);
+                diagram += \`  \${nodeId} --> \${nextNodeId}\\n\`;
+              }
+            });
+          }
+          
+          mermaidDiagram.value = diagram;
+          renderMermaid();
+        };
+        
+        const renderMermaid = async () => {
+          await nextTick();
+          const element = document.getElementById('mermaid-container');
+          if (element) {
+            element.innerHTML = '';
+            try {
+              const { svg } = await mermaid.render('mermaid-graph', mermaidDiagram.value);
+              element.innerHTML = svg;
+            } catch (error) {
+              console.error('Mermaid render error:', error);
+              element.innerHTML = '<p class="text-red-400">Diagram loading...</p>';
+            }
+          }
+        };
+        
+        const connectWebSocket = () => {
+          const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+          const wsUrl = \`\${protocol}//\${window.location.host}\`;
+          
+          ws.value = new WebSocket(wsUrl);
+          
+          ws.value.onopen = () => {
+            isConnected.value = true;
+            addMessage('assistant', '👋 Hi! What are we building today? Start with any idea...');
+          };
+          
+          ws.value.onmessage = (event) => {
+            const data = JSON.parse(event.data);
+            addMessage('assistant', data.content);
+            
+            // Crystallize APML from the full conversation
+            const fullConversation = messages.value.map(m => m.content).join(' ');
+            crystallizeAPML(fullConversation);
+          };
+          
+          ws.value.onclose = () => {
+            isConnected.value = false;
+          };
+        };
+        
+        const addMessage = (type, content) => {
+          messages.value.push({
+            type,
+            content,
+            timestamp: Date.now()
+          });
+        };
+        
+        const sendMessage = () => {
+          if (!userInput.value.trim()) return;
+          
+          addMessage('user', userInput.value);
+          
+          // Immediately start crystallizing APML
+          const fullConversation = messages.value.map(m => m.content).join(' ');
+          crystallizeAPML(fullConversation);
+          
+          if (isConnected.value) {
+            ws.value.send(JSON.stringify({
+              type: 'chat',
+              content: userInput.value
+            }));
+          }
+          
+          userInput.value = '';
+        };
+        
+        // Watch for real-time typing
+        watch(userInput, (newValue) => {
+          if (newValue.length > 10) { // Start crystallizing after a few words
+            const fullConversation = messages.value.map(m => m.content).join(' ') + ' ' + newValue;
+            crystallizeAPML(fullConversation);
+          }
+        });
+        
+        onMounted(() => {
+          connectWebSocket();
+          renderMermaid();
+        });
+        
+        return {
+          messages,
+          userInput,
+          currentAPML,
+          mermaidDiagram,
+          isConnected,
+          phase,
+          sendMessage,
+          renderMermaid
+        };
+      },
+      
+      template: \`
+        <div class="h-screen flex">
+          
+          <!-- Left Panel: Live Mermaid (70%) -->
+          <div class="w-[70%] bg-gray-800 border-r border-gray-700 flex flex-col">
+            <div class="p-4 border-b border-gray-700">
+              <h2 class="text-xl font-bold">App Structure (Live!)</h2>
+              <p class="text-sm text-gray-400">Watch your app grow as we talk</p>
+            </div>
+            
+            <div class="flex-1 p-4 overflow-auto">
+              <div id="mermaid-container" class="w-full h-full flex items-center justify-center"></div>
+            </div>
+            
+            <!-- APML Preview (collapsible) -->
+            <div class="border-t border-gray-700 max-h-48 overflow-auto">
+              <div class="p-4">
+                <h3 class="font-bold text-sm mb-2">Live APML (crystallizing...)</h3>
+                <pre class="text-xs text-green-400 bg-gray-900 p-2 rounded">{{ currentAPML || 'Waiting for your idea...' }}</pre>
+              </div>
+            </div>
+          </div>
+          
+          <!-- Right Panel: iPhone Sim + Chat (30%) -->
+          <div class="w-[30%] flex flex-col">
+            
+            <!-- iPhone Simulator -->
+            <div class="h-1/2 bg-gray-900 border-b border-gray-700 flex items-center justify-center">
+              <div class="w-48 h-96 bg-black rounded-3xl border-4 border-gray-600 relative overflow-hidden">
+                <div class="absolute top-2 left-1/2 transform -translate-x-1/2 w-16 h-1 bg-gray-600 rounded"></div>
+                <div class="p-4 pt-8 h-full bg-gradient-to-b from-blue-900 to-purple-900">
+                  <div class="text-center text-white text-xs">
+                    <p class="mb-2">{{ currentAPML ? 'Your App Preview' : 'App Preview' }}</p>
+                    <div class="text-gray-400 text-xs">
+                      390x844px
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- ADE Chat -->
+            <div class="h-1/2 flex flex-col bg-gray-800">
+              <div class="p-3 border-b border-gray-700">
+                <h3 class="font-bold text-sm">ADE Conversation</h3>
+                <div class="flex items-center space-x-2 text-xs text-gray-400">
+                  <div :class="['w-2 h-2 rounded-full', isConnected ? 'bg-green-500' : 'bg-red-500']"></div>
+                  <span>{{ isConnected ? 'Live Magic' : 'Connecting...' }}</span>
+                </div>
+              </div>
+              
+              <!-- Messages -->
+              <div class="flex-1 overflow-y-auto p-3 space-y-3 text-sm">
+                <div 
+                  v-for="message in messages"
+                  :key="message.timestamp"
+                  :class="[
+                    'p-2 rounded-lg max-w-[90%]',
+                    message.type === 'user' 
+                      ? 'bg-blue-600 ml-auto' 
+                      : 'bg-gray-700 mr-auto'
+                  ]"
+                >
+                  {{ message.content }}
+                </div>
+              </div>
+              
+              <!-- Input -->
+              <div class="p-3 border-t border-gray-700">
+                <div class="flex space-x-2">
+                  <input
+                    v-model="userInput"
+                    @keyup.enter="sendMessage"
+                    placeholder="Type your app idea..."
+                    class="flex-1 px-3 py-2 bg-gray-700 rounded text-white text-sm placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                  <button
+                    @click="sendMessage"
+                    :disabled="!userInput.trim()"
+                    class="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded text-sm font-semibold"
+                  >
+                    Send
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
+          
+        </div>
+      \`
+    }).mount('#app');
+  </script>
+</body>
+</html>

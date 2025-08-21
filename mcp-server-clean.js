@@ -8,7 +8,7 @@ const readline = require('readline');
 const WebSocket = require('ws');
 
 // Configuration
-const ADE_WS_URL = process.env.ADE_WS_URL || 'wss://ade-web-app-production.up.railway.app';
+const ADE_WS_URL = process.env.ADE_WS_URL || 'ws://localhost:3001';
 
 // Global state
 let ws = null;
@@ -33,18 +33,30 @@ const tools = {
   },
   
   send_message: {
-    description: "Send a message to the web interface",
+    description: "Send a message to the ADE web interface - maintains conversation context",
     inputSchema: {
       type: "object",
       properties: {
         message: {
           type: "string",
-          description: "Message content"
+          description: "Message content to send to user"
         },
-        phase: {
-          type: "string",
-          enum: ["thinking", "building", "testing", "deploying", "complete"],
-          description: "Current development phase"
+        app_context: {
+          type: "object",
+          description: "Current app being built (name, type, features)",
+          properties: {
+            name: { type: "string" },
+            type: { type: "string" },
+            features: { type: "array", items: { type: "string" } }
+          }
+        },
+        apml_update: {
+          type: "object",
+          description: "APML structure being built",
+          properties: {
+            screens: { type: "array" },
+            flows: { type: "array" }
+          }
         },
         progress: {
           type: "number",

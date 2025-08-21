@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ADE - App Development Engine</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    .lifecycle-step {
+      transition: all 0.3s ease;
+    }
+    .lifecycle-step.active {
+      transform: scale(1.05);
+      box-shadow: 0 20px 40px rgba(59, 130, 246, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div id="app"></div>
+  
+  <script>
+    const { createApp, ref, computed, onMounted } = Vue;
+    
+    createApp({
+      setup() {
+        const currentStep = ref(0);
+        const showProjectChat = ref(false);
+        const lifecycleCompleted = ref(false);
+        
+        const steps = [
+          {
+            id: 'discovery',
+            title: '💭 Discovery',
+            subtitle: 'THINK your way through',
+            description: 'Chat with ADE about your app idea',
+            example: '"I need a team messaging app like WhatsApp but for work projects"',
+            color: 'blue'
+          },
+          {
+            id: 'apml',
+            title: '📝 APML Generation', 
+            subtitle: 'Intent captured',
+            description: 'ADE creates structured APML from conversation',
+            example: 'screens: chat_screen, task_screen, file_screen...',
+            color: 'green'
+          },
+          {
+            id: 'simulation',
+            title: '📱 Simulation',
+            subtitle: 'FEEL your way through', 
+            description: 'Experience your app at real iPhone size',
+            example: 'Interactive prototype with flow diagrams',
+            color: 'purple'
+          },
+          {
+            id: 'design',
+            title: '🎨 Design Options',
+            subtitle: 'SEE your options',
+            description: 'A/B test visual styles while preserving behavior',
+            example: 'Clean vs Vibrant design directions',
+            color: 'pink'
+          },
+          {
+            id: 'approval',
+            title: '✨ Approval',
+            subtitle: 'Intent conservation',
+            description: 'Confirm behavior + design perfection',
+            example: '"This feels perfect! Compile it!"',
+            color: 'yellow'
+          },
+          {
+            id: 'compilation',
+            title: '🚀 Compilation',
+            subtitle: 'Vue/Swift/Kotlin',
+            description: 'Generate production code using exact classes',
+            example: '42KB Vue app ready for deployment',
+            color: 'emerald'
+          }
+        ];
+        
+        const startFromScratch = () => {
+          // Navigate to clean ADE chat interface
+          window.location.href = '/';
+        };
+        
+        const tryProjectChat = () => {
+          showProjectChat.value = true;
+        };
+        
+        const viewSimulator = () => {
+          window.open('/simulator', '_blank');
+        };
+        
+        const nextStep = () => {
+          if (currentStep.value < steps.length - 1) {
+            currentStep.value++;
+          } else {
+            lifecycleCompleted.value = true;
+          }
+        };
+        
+        const prevStep = () => {
+          if (currentStep.value > 0) {
+            currentStep.value--;
+          }
+        };
+        
+        const goToStep = (index) => {
+          currentStep.value = index;
+        };
+        
+        const currentStepData = computed(() => steps[currentStep.value]);
+        
+        // Auto-advance demo
+        const startDemo = () => {
+          const interval = setInterval(() => {
+            if (currentStep.value < steps.length - 1) {
+              nextStep();
+            } else {
+              clearInterval(interval);
+              lifecycleCompleted.value = true;
+            }
+          }, 3000);
+        };
+        
+        return {
+          currentStep,
+          steps,
+          currentStepData,
+          showProjectChat,
+          lifecycleCompleted,
+          startFromScratch,
+          tryProjectChat,
+          viewSimulator,
+          nextStep,
+          prevStep,
+          goToStep,
+          startDemo
+        };
+      },
+      
+      template: `
+        <div class="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 text-white">
+          <!-- Header -->
+          <header class="p-6 border-b border-gray-700/50">
+            <div class="max-w-6xl mx-auto">
+              <h1 class="text-4xl font-bold bg-gradient-to-r from-blue-400 to-purple-400 bg-clip-text text-transparent">
+                ADE - App Development Engine
+              </h1>
+              <p class="text-gray-300 mt-2">Grammar-based app generation • THINK → FEEL → SEE workflow</p>
+            </div>
+          </header>
+          
+          <!-- Main Content -->
+          <main class="max-w-6xl mx-auto p-6">
+            
+            <!-- ProjectChat Example Section -->
+            <div v-if="!showProjectChat" class="mb-12">
+              <div class="bg-gray-800/50 backdrop-blur rounded-2xl p-8 border border-gray-700/50">
+                <div class="text-center mb-8">
+                  <h2 class="text-3xl font-bold mb-4">Experience the Complete ADE Lifecycle</h2>
+                  <p class="text-gray-300 text-lg max-w-3xl mx-auto">
+                    See how ADE transforms a simple conversation into a production-ready app. 
+                    ProjectChat demonstrates the full <strong>THINK → FEEL → SEE</strong> workflow.
+                  </p>
+                </div>
+                
+                <div class="grid md:grid-cols-2 gap-8">
+                  <!-- Try Sample -->
+                  <div class="bg-gradient-to-br from-blue-600/20 to-purple-600/20 p-6 rounded-xl border border-blue-500/30">
+                    <div class="text-center">
+                      <div class="text-4xl mb-4">📱</div>
+                      <h3 class="text-xl font-bold mb-3">Try ProjectChat Sample</h3>
+                      <p class="text-gray-300 mb-6">
+                        Experience a complete "done for you" app. See the full lifecycle from conversation to deployment.
+                      </p>
+                      <button 
+                        @click="tryProjectChat"
+                        class="w-full px-6 py-3 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-lg font-semibold transition-all"
+                      >
+                        🚀 Explore ProjectChat Lifecycle
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <!-- Start Fresh -->
+                  <div class="bg-gradient-to-br from-green-600/20 to-emerald-600/20 p-6 rounded-xl border border-green-500/30">
+                    <div class="text-center">
+                      <div class="text-4xl mb-4">💬</div>
+                      <h3 class="text-xl font-bold mb-3">Start From Scratch</h3>
+                      <p class="text-gray-300 mb-6">
+                        Begin a fresh conversation with ADE. Describe your app idea and watch it come to life.
+                      </p>
+                      <button 
+                        @click="startFromScratch"
+                        class="w-full px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-lg font-semibold transition-all"
+                      >
+                        ✨ Start New App
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Lifecycle Demo -->
+            <div v-if="showProjectChat" class="space-y-8">
+              
+              <!-- Back Button -->
+              <button 
+                @click="showProjectChat = false"
+                class="flex items-center space-x-2 text-blue-400 hover:text-blue-300 transition-colors"
+              >
+                <span>←</span>
+                <span>Back to Overview</span>
+              </button>
+              
+              <!-- Lifecycle Steps -->
+              <div class="bg-gray-800/50 backdrop-blur rounded-2xl p-8 border border-gray-700/50">
+                <div class="text-center mb-8">
+                  <h2 class="text-2xl font-bold mb-2">ProjectChat Development Lifecycle</h2>
+                  <p class="text-gray-300">From idea to production in 6 steps • Intent never degrades</p>
+                </div>
+                
+                <!-- Progress Bar -->
+                <div class="mb-8">
+                  <div class="flex justify-between items-center mb-4">
+                    <span class="text-sm text-gray-400">Step {{ currentStep + 1 }} of {{ steps.length }}</span>
+                    <span class="text-sm text-gray-400">{{ Math.round(((currentStep + 1) / steps.length) * 100) }}% Complete</span>
+                  </div>
+                  <div class="w-full bg-gray-700 rounded-full h-2">
+                    <div 
+                      class="bg-gradient-to-r from-blue-500 to-purple-500 h-2 rounded-full transition-all duration-500"
+                      :style="{ width: ((currentStep + 1) / steps.length) * 100 + '%' }"
+                    ></div>
+                  </div>
+                </div>
+                
+                <!-- Current Step Display -->
+                <div class="text-center mb-8">
+                  <div :class="['inline-block p-6 rounded-2xl transition-all duration-500 lifecycle-step', 
+                                currentStep >= 0 ? 'active' : '']"
+                       :style="{ backgroundColor: \`rgba(var(--tw-color-\${currentStepData.color}-500), 0.2)\`,
+                                 borderColor: \`rgba(var(--tw-color-\${currentStepData.color}-500), 0.5)\` }"
+                       style="border: 1px solid;">
+                    <div class="text-4xl mb-4">{{ currentStepData.title.split(' ')[0] }}</div>
+                    <h3 class="text-2xl font-bold mb-2">{{ currentStepData.title }}</h3>
+                    <p class="text-lg text-gray-300 mb-4">{{ currentStepData.subtitle }}</p>
+                    <p class="text-gray-400 mb-4">{{ currentStepData.description }}</p>
+                    <div class="bg-gray-800/70 p-3 rounded-lg">
+                      <code class="text-sm text-green-400">{{ currentStepData.example }}</code>
+                    </div>
+                  </div>
+                </div>
+                
+                <!-- Step Navigation -->
+                <div class="flex justify-center space-x-4 mb-8">
+                  <button 
+                    @click="prevStep"
+                    :disabled="currentStep === 0"
+                    class="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+                  >
+                    ← Previous
+                  </button>
+                  <button 
+                    @click="startDemo"
+                    class="px-6 py-2 bg-gradient-to-r from-blue-600 to-purple-600 hover:from-blue-700 hover:to-purple-700 rounded-lg transition-all"
+                  >
+                    ▶ Auto Demo
+                  </button>
+                  <button 
+                    @click="nextStep"
+                    :disabled="currentStep === steps.length - 1"
+                    class="px-4 py-2 bg-gray-700 hover:bg-gray-600 disabled:opacity-50 disabled:cursor-not-allowed rounded-lg transition-colors"
+                  >
+                    Next →
+                  </button>
+                </div>
+                
+                <!-- Step Dots -->
+                <div class="flex justify-center space-x-2">
+                  <button 
+                    v-for="(step, index) in steps"
+                    :key="step.id"
+                    @click="goToStep(index)"
+                    :class="['w-3 h-3 rounded-full transition-all',
+                             index <= currentStep ? 'bg-blue-500' : 'bg-gray-600']"
+                  ></button>
+                </div>
+              </div>
+              
+              <!-- Live Demo Access -->
+              <div v-if="lifecycleCompleted || currentStep >= 2" class="bg-gradient-to-r from-green-600/20 to-emerald-600/20 p-6 rounded-xl border border-green-500/30">
+                <div class="text-center">
+                  <h3 class="text-xl font-bold mb-3">🎯 Experience ProjectChat Live</h3>
+                  <p class="text-gray-300 mb-4">
+                    The actual simulator showing real iPhone behavior, Mermaid flow diagrams, and compilation.
+                  </p>
+                  <button 
+                    @click="viewSimulator"
+                    class="px-6 py-3 bg-gradient-to-r from-green-600 to-emerald-600 hover:from-green-700 hover:to-emerald-700 rounded-lg font-semibold transition-all"
+                  >
+                    🚀 Open ProjectChat Simulator
+                  </button>
+                </div>
+              </div>
+              
+              <!-- Completion Message -->
+              <div v-if="lifecycleCompleted" class="bg-gradient-to-r from-yellow-600/20 to-orange-600/20 p-6 rounded-xl border border-yellow-500/30 text-center">
+                <div class="text-4xl mb-4">🎉</div>
+                <h3 class="text-2xl font-bold mb-3">Lifecycle Complete!</h3>
+                <p class="text-gray-300 mb-4">
+                  You've seen the full ADE process. ProjectChat went from conversation to production-ready Vue.js app.
+                  <br><strong>Intent preserved. No build step. Real iPhone dimensions. Grammar-based generation.</strong>
+                </p>
+                <div class="flex justify-center space-x-4">
+                  <button 
+                    @click="viewSimulator"
+                    class="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+                  >
+                    📱 Try ProjectChat
+                  </button>
+                  <button 
+                    @click="startFromScratch"
+                    class="px-6 py-3 bg-green-600 hover:bg-green-700 rounded-lg transition-colors"
+                  >
+                    🚀 Build Your App
+                  </button>
+                </div>
+              </div>
+            </div>
+            
+          </main>
+          
+          <!-- Footer -->
+          <footer class="text-center py-8 text-gray-400 border-t border-gray-700/50 mt-12">
+            <p>ADE • Grammar + Examples • Intent Conservation • Real iPhone Scale</p>
+          </footer>
+        </div>
+      `
+    }).mount('#app');
+  </script>
+</body>
+</html>

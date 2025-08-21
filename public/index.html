@@ -4,7 +4,7 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>ADE - Application Development Engine</title>
-  <link rel="stylesheet" href="styles-dark.css">
+  <link rel="stylesheet" href="styles-modern.css">
   <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
 </head>
 <body>
@@ -51,23 +51,24 @@
     </header>
 
     <!-- Main Content Area (changes based on phase) -->
-    <main class="ade-main">
+    <main class="main-content">
       
       <!-- SPECIFY Phase -->
-      <section id="specify-phase" class="phase-content active">
+      <section id="specify-phase" class="phase-content active glass">
         <div class="specify-container">
           <div class="specify-prompt">
-            <h2>THINK - What would you like to build?</h2>
+            <h2 class="neon-text">THINK - What would you like to build?</h2>
             <p>Just tell ADE your idea. No coding needed. Think of it like explaining to a friend.</p>
             
             <textarea 
               id="app-description"
+              class="chat-input"
               placeholder="I want to build a family sharing app like Netflix where family members can create profiles, share subscriptions, and track usage..."
               rows="8"
             ></textarea>
             
             <div class="specify-actions">
-              <button id="start-building" class="primary-btn">
+              <button id="start-building" class="btn btn-primary">
                 Start Building
                 <span class="time-estimate">~15 min</span>
               </button>

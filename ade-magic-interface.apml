@@ -1,0 +1,132 @@
+apml_version: 1.0
+metadata:
+  title: "ADE Magic Interface"
+  author: "ADE Conversation"
+  purpose: "Main ADE interface - conversation crystallizes into live app visualization"
+  created: "2025-07-13T22:30:00Z"
+  
+app_name: "ADE Magic Interface"
+app_type: "development_tool"
+
+screens:
+  main_workspace:
+    name: "Main Workspace"
+    layout: "split_pane"
+    components:
+      - left_pane:
+          width: "70%"
+          component: "mermaid_visualizer"
+          content:
+            - live_diagram:
+                initial_state: "Start Here"
+                auto_clusters: ["auth", "admin", "anon", "app_specific"]
+                interactive: true
+                click_action: "sync_phone_simulator"
+            - transition_lines:
+                type: "dotted"
+                animation: "fade_in"
+                duration: "2s"
+      
+      - right_pane:
+          width: "30%"
+          component: "iphone_simulator"
+          size: "390x844px"
+          content:
+            - screen_display:
+                initial_screen: "start_here_button"
+                navbars: true
+                interactive: true
+                tap_action: "sync_mermaid_map"
+            - state_indicator:
+                shows: "active_screen"
+                highlight: "pulsing"
+
+  floating_chat:
+    name: "Floating Chat Window"
+    type: "overlay"
+    positioning:
+      initial: "center"
+      draggable: true
+      z_index: 1000
+    behavior:
+      opens_with: "What do you want to build?"
+      interaction_mode: "one_question_one_answer"
+      text_copyable: true
+      voice_enabled: false
+    sizing:
+      default: "small_central"
+      obscures: "map_not_simulator"
+
+universal_patterns:
+  auth_cluster:
+    screens:
+      - signin_signup:
+          method: "OTP"
+          single_page: true
+      - account_details:
+          fields: ["name", "email", "profile"]
+      - settings:
+          options: ["change_email", "change_password", "preferences"]
+  
+  admin_cluster:
+    screens:
+      - admin_dashboard:
+          access: "admin_users_only"
+      - user_management:
+          actions: ["view", "edit", "delete"]
+      - system_config:
+          settings: ["app_settings", "integrations"]
+  
+  anon_cluster:
+    screens:
+      - public_home:
+          accessible: "all_users"
+      - about:
+          content: "app_explanation"
+      - contact:
+          form: "contact_us"
+
+interactions:
+  map_click:
+    trigger: "click_mermaid_node"
+    action: "navigate_phone_simulator"
+    effect: "show_transition_line"
+  
+  phone_tap:
+    trigger: "tap_simulator_element"
+    action: "highlight_map_node" 
+    effect: "show_transition_line"
+  
+  chat_input:
+    trigger: "user_types"
+    action: "crystallize_apml"
+    effect: "update_visualizations"
+
+features:
+  real_time_crystallization:
+    enabled: true
+    triggers: ["user_input", "keyword_detection"]
+    updates: ["mermaid_diagram", "phone_screens", "apml_structure"]
+  
+  apml_technical_toggle:
+    enabled: true
+    default_state: "hidden"
+    toggle_reveals: "full_apml_syntax"
+    display_mode: "side_panel"
+  
+  auto_pattern_generation:
+    enabled: true
+    patterns: ["auth", "admin", "anon"]
+    trigger: "app_type_detection"
+
+navigation_sync:
+  bidirectional: true
+  map_to_phone: "click_to_navigate"
+  phone_to_map: "tap_to_highlight"
+  transition_visualization: "dotted_lines"
+  active_state_display: "highlighted_node"
+
+development_phases:
+  current: "behavior_mode"
+  next: "eye_test_phase"
+  available_modes: ["behavior", "design", "deploy"]
