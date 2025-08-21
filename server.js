@@ -6,7 +6,7 @@ const WebSocket = require('ws');
 const http = require('http');
 const Anthropic = require('@anthropic-ai/sdk');
 const fs = require('fs').promises;
-const { compileAPMLToVue } = require('./compiler/apml-to-vue');
+const PatternVueCompiler = require('./compiler/pattern-vue-compiler');
 
 const app = express();
 const server = http.createServer(app);
@@ -337,11 +337,12 @@ app.get('/api/stats', async (req, res) => {
 app.post('/api/compile', async (req, res) => {
   try {
     const { apml } = req.body;
-    const vueComponent = compileAPMLToVue(apml);
+    const compiler = new PatternVueCompiler();
+    const vueComponent = compiler.compile(apml);
     res.json({ 
       success: true, 
       vueComponent,
-      message: 'APML compiled to Vue successfully'
+      message: 'APML compiled to Vue with advanced pattern compiler'
     });
   } catch (error) {
     res.status(500).json({ 

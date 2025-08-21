@@ -1,0 +1,233 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Advanced Test App</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <style>
+    
+      body {
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        background: #0a0a0a;
+        color: #ffffff;
+        margin: 0;
+        padding: 20px;
+      }
+      
+      .app-container {
+        max-width: 800px;
+        margin: 0 auto;
+      }
+      
+      .component {
+        background: #1a1a1a;
+        border: 1px solid #333;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 20px 0;
+      }
+      
+      /* Form Pattern Styles */
+      form {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+      }
+      
+      textarea, input {
+        padding: 12px;
+        border: 1px solid #333;
+        border-radius: 4px;
+        background: #0a0a0a;
+        color: #ffffff;
+        font-family: inherit;
+        font-size: 16px;
+      }
+      
+      textarea {
+        resize: vertical;
+        min-height: 100px;
+      }
+      
+      button {
+        background: #00ff88;
+        color: #000;
+        border: none;
+        padding: 12px 24px;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+        font-size: 16px;
+      }
+      
+      button:disabled {
+        opacity: 0.5;
+        cursor: not-allowed;
+      }
+      
+      button:hover:not(:disabled) {
+        opacity: 0.9;
+      }
+      
+      button.secondary {
+        background: #333;
+        color: #fff;
+      }
+      
+      /* List Pattern Styles */
+      .list-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 10px;
+        border-bottom: 1px solid #333;
+      }
+      
+      .list-item:last-child {
+        border-bottom: none;
+      }
+      
+      /* Modal Pattern Styles */
+      .modal-overlay {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: rgba(0, 0, 0, 0.8);
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        z-index: 1000;
+      }
+      
+      .modal-content {
+        background: #1a1a1a;
+        border: 1px solid #333;
+        border-radius: 8px;
+        padding: 30px;
+        max-width: 500px;
+        width: 90%;
+      }
+      
+      .modal-actions {
+        margin-top: 20px;
+        display: flex;
+        gap: 10px;
+        justify-content: flex-end;
+      }
+      
+      /* Table Pattern Styles */
+      table {
+        width: 100%;
+        border-collapse: collapse;
+      }
+      
+      th, td {
+        padding: 12px;
+        text-align: left;
+        border-bottom: 1px solid #333;
+      }
+      
+      th {
+        background: #333;
+        font-weight: 600;
+      }
+      
+      h1 {
+        color: #00ff88;
+        text-align: center;
+        margin-bottom: 30px;
+      }
+      
+      h2, h3 {
+        color: #00ff88;
+        margin-bottom: 15px;
+      }
+    
+  </style>
+</head>
+<body>
+  <div id="app">
+    <div class="app-container">
+      <h1>{{ appTitle }}</h1>
+      <div class="component welcome_screen" v-if="current_view === 'welcome">
+          
+      <div class="welcome-card">
+        <h1 class="welcome-title">Welcome to ADE</h1>
+        <h2 class="welcome-subtitle">Build apps in minutes</h2>
+        <p class="welcome-description">Transform conversations into production-ready applications</p>
+        <div class="welcome-meta">Powered by Claude Sonnet 4</div>
+        <button @click="start_game" class="welcome-button">Start Building</button>
+      </div>
+    
+        </div>\n<div class="component user_form">
+          <p>Component type 'button' not yet implemented</p>
+        </div>\n<div class="component data_display" v-if="true">
+          
+      <table>
+        <thead>
+          <tr>
+            
+          </tr>
+        </thead>
+        <tbody>
+          <tr v-for="row in user_projects" :key="row.id">
+            
+          </tr>
+        </tbody>
+      </table>
+    
+        </div>\n<div class="component navigation_modal" v-if="show_nav_modal">
+          
+      <div v-if="show_nav_modal" class="modal-overlay" @click="closeModal">
+        <div class="modal-content" @click.stop>
+          <h3>{{ Navigation Menu }}</h3>
+          <div class="modal-body">{{ Choose your next destination }}</div>
+          <div class="modal-actions">
+            
+          </div>
+        </div>
+      </div>
+    
+        </div>
+    </div>
+  </div>
+
+  <script>
+    // Wait for Vue to load
+    function initApp() {
+      if (typeof Vue === 'undefined') {
+        setTimeout(initApp, 100);
+        return;
+      }
+      
+      const { createApp } = Vue;
+      
+      createApp({
+        data() {
+          return {
+            appTitle: 'Advanced Test App',
+            user_profile: "{}",\n        messages: "[]",\n        current_view: "welcome"
+          };
+        },
+        methods: {
+          testMethod() {
+        console.log('Method called from Vue app');
+      }
+        },
+        mounted() {
+          console.log('Advanced Test App loaded with pattern-based compilation');
+        }
+      }).mount('#app');
+    }
+    
+    // Initialize when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initApp);
+    } else {
+      initApp();
+    }
+  </script>
+</body>
+</html>
