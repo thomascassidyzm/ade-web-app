@@ -245,7 +245,7 @@ CRITICAL: NEVER output raw Vue code, HTML, or CSS. Only APML specifications and 
 
         // Call Claude API with full conversation context
         const response = await anthropic.messages.create({
-          model: 'claude-3-5-sonnet-20241022',
+          model: 'claude-sonnet-4-20250514',
           max_tokens: 1000,
           system: contextualPrompt,
           messages: [{ role: 'user', content: message.content }]
