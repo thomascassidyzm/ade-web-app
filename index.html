@@ -3,284 +3,82 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ADE - App Development Engine</title>
-  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
-  <script src="https://cdn.tailwindcss.com"></script>
+  <title>ADE - App Development Engine (Vercel)</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js?v=2025"></script>
+  <link rel="stylesheet" href="public/styles-tailwind-minimal.css?v=2025">
+  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
   <style>
-    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
-    .message-enter-active, .message-leave-active { transition: all 0.3s ease; }
-    .message-enter-from { opacity: 0; transform: translateY(10px); }
-    .message-leave-to { opacity: 0; transform: translateY(-10px); }
+    .draggable { cursor: move; }
+    .phone-simulator {
+      width: 390px;
+      height: 844px;
+      background: linear-gradient(145deg, #1f2937, #374151);
+      border-radius: 30px;
+      border: 8px solid #4b5563;
+      position: relative;
+      overflow: hidden;
+    }
   </style>
 </head>
-<body>
-  <div id="app"></div>
+<body class="bg-gray-900 text-white overflow-hidden h-screen">
+  <div id="app">
+    <div class="h-screen flex bg-gray-900">
+      <!-- Left Side: Mermaid Diagram -->
+      <div class="flex-1 p-4 overflow-hidden">
+        <div class="bg-gray-800 rounded-lg h-full flex flex-col">
+          <div class="p-4 border-b border-gray-700">
+            <h2 class="text-xl font-bold text-green-400">📱 App Flow Visualization</h2>
+            <p class="text-sm text-gray-400">Vercel Serverless • Claude Sonnet 4</p>
+          </div>
+          <div class="flex-1 p-4 overflow-auto">
+            <div id="mermaid-diagram" class="w-full h-full flex items-center justify-center text-gray-400">
+              Loading diagram...
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Right Side: Phone Simulator -->
+      <div class="flex-1 flex items-center justify-center p-4">
+        <div class="phone-simulator">
+          <div class="p-4 pt-8 h-full overflow-auto bg-gray-800 text-white">
+            <div class="text-center">
+              <h1 class="text-2xl font-bold mb-4">ADE v7</h1>
+              <p class="text-gray-300 mb-6">Vercel Deployment Ready!</p>
+              <div class="space-y-2">
+                <div class="p-2 bg-blue-600 rounded">Chat with Claude Sonnet 4</div>
+                <div class="p-2 bg-purple-600 rounded">Single-Agent Compiler</div>
+                <div class="p-2 bg-green-600 rounded">90% Pattern Coverage</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Quick Test Button -->
+      <button 
+        onclick="testAPI()"
+        class="fixed bottom-6 right-6 w-16 h-16 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center text-2xl shadow-lg z-50"
+      >
+        🧪
+      </button>
+    </div>
+  </div>
   
   <script>
-    const { createApp, ref, onMounted, nextTick } = Vue;
-    
-    createApp({
-      setup() {
-        const messages = ref([]);
-        const userInput = ref('');
-        const isConnected = ref(false);
-        const ws = ref(null);
-        const showChat = ref(false);
-        
-        const connectWebSocket = () => {
-          const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-          const wsUrl = `${protocol}//${window.location.host}`;
-          
-          ws.value = new WebSocket(wsUrl);
-          
-          ws.value.onopen = () => {
-            isConnected.value = true;
-            console.log('Connected to ADE');
-          };
-          
-          ws.value.onmessage = (event) => {
-            const data = JSON.parse(event.data);
-            messages.value.push({
-              type: 'assistant',
-              content: data.content,
-              timestamp: Date.now()
-            });
-            scrollToBottom();
-          };
-          
-          ws.value.onclose = () => {
-            isConnected.value = false;
-            console.log('Disconnected from ADE');
-          };
-          
-          ws.value.onerror = (error) => {
-            console.error('WebSocket error:', error);
-          };
-        };
-        
-        const sendMessage = () => {
-          if (!userInput.value.trim() || !isConnected.value) return;
-          
-          messages.value.push({
-            type: 'user',
-            content: userInput.value,
-            timestamp: Date.now()
-          });
-          
-          ws.value.send(JSON.stringify({
-            type: 'chat',
-            content: userInput.value
-          }));
-          
-          userInput.value = '';
-          scrollToBottom();
-        };
-        
-        const scrollToBottom = () => {
-          nextTick(() => {
-            const chatContainer = document.getElementById('chat-messages');
-            if (chatContainer) {
-              chatContainer.scrollTop = chatContainer.scrollHeight;
-            }
-          });
-        };
-        
-        const startChat = () => {
-          showChat.value = true;
-          if (!isConnected.value) {
-            connectWebSocket();
-          }
-          
-          // Welcome message
-          setTimeout(() => {
-            messages.value.push({
-              type: 'assistant',
-              content: '👋 Hello! I\'m ADE - your App Development Engine. I transform conversations into production-ready apps using APML.\n\nTell me about the app you\'d like to build! For example:\n• "I need a team messaging app"\n• "Build a task management tool"\n• "Create a file sharing platform"',
-              timestamp: Date.now()
-            });
-          }, 500);
-        };
-        
-        onMounted(() => {
-          // Auto-connect on page load for demo
-          connectWebSocket();
+    async function testAPI() {
+      try {
+        const response = await fetch('/api/chat', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ message: 'test coaching app' })
         });
-        
-        return {
-          messages,
-          userInput,
-          isConnected,
-          showChat,
-          sendMessage,
-          startChat
-        };
-      },
-      
-      template: `
-        <div class="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 text-white">
-          
-          <!-- Main Interface -->
-          <div v-if="!showChat" class="container mx-auto px-4 py-8">
-            <header class="text-center mb-12">
-              <h1 class="text-5xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
-                ADE
-              </h1>
-              <p class="text-2xl text-gray-300 mb-2">
-                App Development Engine
-              </p>
-              <p class="text-lg text-gray-400">
-                Grammar-based app generation • THINK → FEEL → SEE workflow
-              </p>
-            </header>
-            
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
-              
-              <!-- Start New App -->
-              <div class="bg-gray-800/50 backdrop-blur p-6 rounded-2xl border border-gray-700/50 text-center">
-                <div class="text-4xl mb-4">🚀</div>
-                <h2 class="text-xl font-bold mb-3 text-green-400">Start New App</h2>
-                <p class="text-gray-300 mb-6 text-sm">
-                  Begin a conversation with ADE. Describe your idea and watch it become reality.
-                </p>
-                <button 
-                  @click="startChat"
-                  class="w-full bg-green-600 hover:bg-green-700 px-4 py-3 rounded-lg font-semibold transition-all"
-                >
-                  💬 Chat with ADE
-                </button>
-              </div>
-              
-              <!-- Complete Lifecycle Demo -->
-              <div class="bg-gray-800/50 backdrop-blur p-6 rounded-2xl border border-gray-700/50 text-center">
-                <div class="text-4xl mb-4">🎯</div>
-                <h2 class="text-xl font-bold mb-3 text-purple-400">Lifecycle Demo</h2>
-                <p class="text-gray-300 mb-6 text-sm">
-                  See the complete THINK → FEEL → SEE process using ProjectChat as example.
-                </p>
-                <a 
-                  href="/meta" 
-                  class="w-full inline-block bg-purple-600 hover:bg-purple-700 px-4 py-3 rounded-lg font-semibold transition-all"
-                >
-                  🎬 View Demo
-                </a>
-              </div>
-              
-              <!-- Live Simulator -->
-              <div class="bg-gray-800/50 backdrop-blur p-6 rounded-2xl border border-gray-700/50 text-center">
-                <div class="text-4xl mb-4">📱</div>
-                <h2 class="text-xl font-bold mb-3 text-blue-400">Live Simulator</h2>
-                <p class="text-gray-300 mb-6 text-sm">
-                  Experience ProjectChat at real iPhone scale with flow diagrams and compilation.
-                </p>
-                <a 
-                  href="/simulator" 
-                  class="w-full inline-block bg-blue-600 hover:bg-blue-700 px-4 py-3 rounded-lg font-semibold transition-all"
-                >
-                  🎮 Try Simulator
-                </a>
-              </div>
-              
-              <!-- APML Tools -->
-              <div class="bg-gray-800/50 backdrop-blur p-6 rounded-2xl border border-gray-700/50 text-center">
-                <div class="text-4xl mb-4">🔧</div>
-                <h2 class="text-xl font-bold mb-3 text-orange-400">APML Tools</h2>
-                <p class="text-gray-300 mb-6 text-sm">
-                  Upload and visualize APML files. See structure, flows, and validation.
-                </p>
-                <a 
-                  href="/visualizer" 
-                  class="w-full inline-block bg-orange-600 hover:bg-orange-700 px-4 py-3 rounded-lg font-semibold transition-all"
-                >
-                  📊 Open Tools
-                </a>
-              </div>
-            </div>
-            
-            <!-- Feature Highlights -->
-            <section class="text-center mb-16">
-              <h2 class="text-3xl font-bold mb-8">Why ADE?</h2>
-              <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
-                <div class="p-6">
-                  <div class="text-5xl mb-4">⚡</div>
-                  <h3 class="text-xl font-bold mb-3">Grammar + Examples</h3>
-                  <p class="text-gray-400">No searching pattern libraries. Claude knows how to build at any complexity level.</p>
-                </div>
-                <div class="p-6">
-                  <div class="text-5xl mb-4">🧬</div>
-                  <h3 class="text-xl font-bold mb-3">Intent Conservation</h3>
-                  <p class="text-gray-400">APML preserves your intent through all transformations. Regeneration always possible.</p>
-                </div>
-                <div class="p-6">
-                  <div class="text-5xl mb-4">📐</div>
-                  <h3 class="text-xl font-bold mb-3">Real iPhone Scale</h3>
-                  <p class="text-gray-400">390px drives layout. Experience your app at actual device dimensions.</p>
-                </div>
-              </div>
-            </section>
-          </div>
-          
-          <!-- Chat Interface -->
-          <div v-if="showChat" class="h-screen flex flex-col bg-gray-900">
-            
-            <!-- Chat Header -->
-            <header class="bg-gray-800 border-b border-gray-700 p-4 flex items-center justify-between">
-              <div class="flex items-center space-x-3">
-                <button @click="showChat = false" class="text-gray-400 hover:text-white">
-                  ← Back
-                </button>
-                <h1 class="text-xl font-bold">ADE Chat</h1>
-                <div :class="['w-2 h-2 rounded-full', isConnected ? 'bg-green-500' : 'bg-red-500']"></div>
-              </div>
-              <div class="text-sm text-gray-400">
-                {{ isConnected ? 'Connected' : 'Connecting...' }}
-              </div>
-            </header>
-            
-            <!-- Messages -->
-            <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4">
-              <transition-group name="message">
-                <div 
-                  v-for="message in messages"
-                  :key="message.timestamp"
-                  :class="[
-                    'max-w-2xl p-4 rounded-2xl',
-                    message.type === 'user' 
-                      ? 'bg-blue-600 text-white ml-auto' 
-                      : 'bg-gray-800 text-gray-100 mr-auto border border-gray-700'
-                  ]"
-                >
-                  <div class="text-xs opacity-70 mb-2">
-                    {{ message.type === 'user' ? 'You' : 'ADE' }}
-                  </div>
-                  <div class="whitespace-pre-wrap">{{ message.content }}</div>
-                </div>
-              </transition-group>
-            </div>
-            
-            <!-- Input -->
-            <div class="border-t border-gray-700 p-4">
-              <div class="flex space-x-3">
-                <input
-                  v-model="userInput"
-                  @keyup.enter="sendMessage"
-                  :disabled="!isConnected"
-                  placeholder="Describe the app you want to build..."
-                  class="flex-1 px-4 py-3 bg-gray-800 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
-                />
-                <button
-                  @click="sendMessage"
-                  :disabled="!isConnected || !userInput.trim()"
-                  class="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-colors"
-                >
-                  Send
-                </button>
-              </div>
-            </div>
-          </div>
-          
-        </div>
-      `
-    }).mount('#app');
+        const data = await response.json();
+        alert('API Test Success! Response: ' + data.content.substring(0, 100) + '...');
+      } catch (error) {
+        alert('API Test Failed: ' + error.message);
+      }
+    }
   </script>
 </body>
 </html>
