@@ -245,7 +245,7 @@ CRITICAL: NEVER output raw Vue code, HTML, or CSS. Only APML specifications and 
 
         // Call Claude API with full conversation context
         const response = await anthropic.messages.create({
-          model: 'claude-opus-4-20250514',
+          model: 'claude-3-5-sonnet-20241022',
           max_tokens: 1000,
           system: contextualPrompt,
           messages: [{ role: 'user', content: message.content }]
@@ -293,7 +293,11 @@ CRITICAL: NEVER output raw Vue code, HTML, or CSS. Only APML specifications and 
         console.log(`💬 Session ${currentSessionId}: ${session.messages.length} messages`);
       }
     } catch (error) {
-      console.error('WebSocket error:', error);
+      console.error('WebSocket error details:', {
+        message: error.message,
+        stack: error.stack,
+        type: error.constructor.name
+      });
       ws.send(JSON.stringify({
         type: 'error',
         content: 'Sorry, I encountered an error processing your message.'
