@@ -23,7 +23,13 @@ class PatternVueCompiler {
       progress_bar: this.compileProgressBar,
       card_container: this.compileCardContainer,
       scrollable_panel: this.compileScrollablePanel,
-      tabbed_panel: this.compileTabbedPanel
+      tabbed_panel: this.compileTabbedPanel,
+      // Top 5 Missing Patterns (Production-Critical)
+      adaptive_input: this.compileAdaptiveInput,
+      math_expression: this.compileMathExpression,
+      auto_advance_input: this.compileAutoAdvanceInput,
+      store_connected: this.compileStoreConnected,
+      vue_router: this.compileVueRouter
     };
   }
 
@@ -512,6 +518,251 @@ class PatternVueCompiler {
         color: #00ff88;
         margin-bottom: 15px;
       }
+
+      /* NEW PRODUCTION-CRITICAL PATTERN STYLES */
+      
+      /* 1. Device-Adaptive Input Styles */
+      .adaptive-input {
+        position: relative;
+        width: 100%;
+      }
+      
+      .adaptive-input.touch-mode .binary-choice-btn {
+        min-height: 48px;
+        margin: 8px;
+        font-size: 18px;
+      }
+      
+      .adaptive-input.mouse-mode .binary-choice-btn {
+        min-height: 36px;
+        margin: 4px;
+        font-size: 16px;
+      }
+      
+      .binary-choice-inputs {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        flex-wrap: wrap;
+      }
+      
+      .binary-choice-btn {
+        background: #333;
+        border: 2px solid #555;
+        color: #ffffff;
+        border-radius: 8px;
+        padding: 12px 24px;
+        cursor: pointer;
+        transition: all 0.2s;
+      }
+      
+      .binary-choice-btn:hover {
+        background: #444;
+        border-color: #00ff88;
+      }
+      
+      .binary-choice-btn.selected {
+        background: #00ff88;
+        color: #000;
+        border-color: #00ff88;
+      }
+      
+      /* 2. Mathematical Expression Styles */
+      .math-expression {
+        background: #1a1a1a;
+        border: 1px solid #333;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 16px 0;
+        font-family: 'Courier New', monospace;
+      }
+      
+      .expression-container {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        gap: 4px;
+        font-size: 24px;
+        flex-wrap: wrap;
+      }
+      
+      .math-text, .math-operator, .math-number {
+        color: #ffffff;
+      }
+      
+      .math-variable {
+        color: #00ff88;
+        font-weight: bold;
+      }
+      
+      .math-variable.interactive {
+        cursor: pointer;
+        text-decoration: underline;
+      }
+      
+      .math-input {
+        background: #0a0a0a;
+        border: 2px solid #00ff88;
+        color: #ffffff;
+        border-radius: 4px;
+        padding: 8px 12px;
+        font-family: 'Courier New', monospace;
+        font-size: 20px;
+        text-align: center;
+        width: 80px;
+        margin: 0 4px;
+      }
+      
+      .math-input:focus {
+        outline: none;
+        border-color: #00ff88;
+        box-shadow: 0 0 8px rgba(0, 255, 136, 0.3);
+      }
+      
+      .validation-feedback {
+        margin-top: 12px;
+        padding: 8px;
+        border-radius: 4px;
+        font-size: 14px;
+        background: #333;
+        color: #ffffff;
+      }
+      
+      /* 3. Auto-Advance Input Styles */
+      .auto-advance-input {
+        background: #1a1a1a;
+        border: 1px solid #333;
+        border-radius: 8px;
+        padding: 20px;
+        margin: 16px 0;
+      }
+      
+      .fields-container {
+        display: flex;
+        gap: 12px;
+        justify-content: center;
+        align-items: center;
+        flex-wrap: wrap;
+        margin: 20px 0;
+      }
+      
+      .auto-advance-field {
+        position: relative;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+      }
+      
+      .auto-advance-field input {
+        background: #0a0a0a;
+        border: 2px solid #333;
+        color: #ffffff;
+        border-radius: 4px;
+        padding: 12px;
+        font-size: 18px;
+        text-align: center;
+        width: 80px;
+        transition: all 0.3s;
+      }
+      
+      .auto-advance-field input.current-step {
+        border-color: #00ff88;
+        box-shadow: 0 0 8px rgba(0, 255, 136, 0.3);
+      }
+      
+      .auto-advance-field input.completed {
+        border-color: #00ff88;
+        background: rgba(0, 255, 136, 0.1);
+      }
+      
+      .auto-advance-field input.correct {
+        border-color: #00ff88;
+        background: rgba(0, 255, 136, 0.2);
+      }
+      
+      .auto-advance-field input.incorrect {
+        border-color: #ff4444;
+        background: rgba(255, 68, 68, 0.1);
+        animation: shake 0.3s;
+      }
+      
+      @keyframes shake {
+        0%, 100% { transform: translateX(0); }
+        25% { transform: translateX(-4px); }
+        75% { transform: translateX(4px); }
+      }
+      
+      .status-correct {
+        color: #00ff88;
+        font-size: 20px;
+        font-weight: bold;
+      }
+      
+      .status-incorrect {
+        color: #ff4444;
+        font-size: 20px;
+        font-weight: bold;
+      }
+      
+      .progress-indicator {
+        text-align: center;
+        color: #888;
+        font-size: 14px;
+        margin-top: 16px;
+      }
+      
+      /* 4. Store Connected Component Styles */
+      .store-connected-component {
+        position: relative;
+      }
+      
+      .loading-state {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        padding: 40px;
+        color: #888;
+        font-style: italic;
+      }
+      
+      /* 5. Vue Router Styles */
+      .router-app {
+        min-height: 100vh;
+        display: flex;
+        flex-direction: column;
+      }
+      
+      .main-navigation {
+        background: #1a1a1a;
+        border-bottom: 1px solid #333;
+        padding: 16px 0;
+        display: flex;
+        justify-content: center;
+        gap: 24px;
+      }
+      
+      .nav-link {
+        color: #ffffff;
+        text-decoration: none;
+        padding: 8px 16px;
+        border-radius: 4px;
+        transition: all 0.2s;
+      }
+      
+      .nav-link:hover {
+        background: #333;
+        color: #00ff88;
+      }
+      
+      .nav-link.router-link-active {
+        background: #00ff88;
+        color: #000;
+      }
+      
+      .router-view-container {
+        flex: 1;
+        padding: 20px;
+      }
     `;
   }
 
@@ -743,6 +994,201 @@ class PatternVueCompiler {
           ${tabContentHTML}
         </div>
       </div>
+    `;
+  }
+
+  // TOP 5 MISSING PATTERNS - PRODUCTION CRITICAL
+
+  /**
+   * 1. Device-Adaptive Input Components
+   * Essential for mobile/desktop compatibility
+   */
+  compileAdaptiveInput(config) {
+    const adaptations = config.device_adaptation || {};
+    const touchAdaptation = adaptations.touch || {};
+    const mouseAdaptation = adaptations.mouse || {};
+    const keyboardAdaptation = adaptations.keyboard || {};
+
+    return `
+      <div class="adaptive-input" :class="deviceAdaptiveClasses">
+        <div class="input-container">
+          ${config.input_method === 'binary_choice' ? 
+            this.generateBinaryChoiceInputs(config) :
+            this.generateStandardInputs(config)
+          }
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * 2. Mathematical Expression Rendering
+   * Core for educational apps with LaTeX/MathML support
+   */
+  compileMathExpression(config) {
+    const expressionParts = config.expression_parts || [];
+    
+    const partsHTML = expressionParts.map(part => {
+      switch(part.type) {
+        case 'text':
+          return `<span class="math-text">${part.content}</span>`;
+        case 'variable':
+          return `<span class="math-variable ${part.interactive ? 'interactive' : ''}">${part.content}</span>`;
+        case 'operator':
+          return `<span class="math-operator">${part.content}</span>`;
+        case 'input':
+          return `<input v-model="mathValues.${part.id}" class="math-input" :placeholder="'${part.placeholder || '?'}'" @input="validateMathInput('${part.id}')">`;
+        case 'number':
+          return `<span class="math-number">${part.content}</span>`;
+        default:
+          return `<span>${part.content}</span>`;
+      }
+    }).join('');
+
+    return `
+      <div class="math-expression" :class="{ 'auto-advance': ${config.auto_advance || false} }">
+        <div class="expression-container">
+          ${partsHTML}
+        </div>
+        ${config.validation === 'real_time' ? 
+          '<div class="validation-feedback" v-if="mathValidationMessage">{{ mathValidationMessage }}</div>' : 
+          ''
+        }
+      </div>
+    `;
+  }
+
+  /**
+   * 3. Auto-Advance Input System
+   * Revolutionary UX pattern for educational apps
+   */
+  compileAutoAdvanceInput(config) {
+    const fields = config.fields || [];
+    
+    const fieldsHTML = fields.map((field, index) => `
+      <div class="auto-advance-field" data-field-index="${index}">
+        <input 
+          v-model="autoAdvanceValues.${field.id}" 
+          @input="handleAutoAdvanceInput('${field.id}', ${index})"
+          @keydown="handleAutoAdvanceKeydown($event, ${index})"
+          :disabled="currentAutoAdvanceStep > ${index}"
+          :class="{ 
+            'current-step': currentAutoAdvanceStep === ${index},
+            'completed': currentAutoAdvanceStep > ${index},
+            'correct': fieldStates.${field.id} === 'correct',
+            'incorrect': fieldStates.${field.id} === 'incorrect'
+          }"
+          placeholder="${field.placeholder || '?'}"
+          ref="autoAdvanceField${index}"
+        />
+        <div class="field-status" v-if="fieldStates.${field.id}">
+          <span v-if="fieldStates.${field.id} === 'correct'" class="status-correct">✓</span>
+          <span v-if="fieldStates.${field.id} === 'incorrect'" class="status-incorrect">✗</span>
+        </div>
+      </div>
+    `).join('');
+
+    return `
+      <div class="auto-advance-input">
+        <h3>${config.title || 'Complete the sequence'}</h3>
+        <div class="fields-container">
+          ${fieldsHTML}
+        </div>
+        <div class="progress-indicator">
+          Step {{ currentAutoAdvanceStep + 1 }} of ${fields.length}
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * 4. Store Integration (Pinia/Vuex)
+   * Required for complex state management
+   */
+  compileStoreConnected(config) {
+    const stores = config.stores || {};
+    const computed = config.computed || {};
+    
+    const storeImports = Object.keys(stores).map(storeName => 
+      `const ${storeName}Store = use${storeName.charAt(0).toUpperCase() + storeName.slice(1)}Store();`
+    ).join('\n          ');
+
+    const computedProperties = Object.entries(computed).map(([key, value]) => 
+      `${key}: () => ${value}`
+    ).join(',\n          ');
+
+    return `
+      <div class="store-connected-component">
+        <div v-if="isLoading" class="loading-state">Loading...</div>
+        <div v-else class="content">
+          <!-- Component content with store data -->
+          <slot></slot>
+        </div>
+      </div>
+    `;
+  }
+
+  /**
+   * 5. Vue Router Integration
+   * Essential for multi-page apps
+   */
+  compileVueRouter(config) {
+    const routes = config.routes || [];
+    
+    const routesConfig = routes.map(route => `
+      {
+        path: '${route.path}',
+        component: ${route.component},
+        meta: ${JSON.stringify(route.meta || {})}
+      }`
+    ).join(',');
+
+    return `
+      <div class="router-app">
+        <nav class="main-navigation" v-if="showNavigation">
+          ${routes.map(route => `
+            <router-link to="${route.path}" class="nav-link">
+              ${route.meta?.title || route.path.slice(1) || 'Home'}
+            </router-link>
+          `).join('')}
+        </nav>
+        <main class="router-view-container">
+          <router-view></router-view>
+        </main>
+      </div>
+    `;
+  }
+
+  // Helper methods for new patterns
+  generateBinaryChoiceInputs(config) {
+    return `
+      <div class="binary-choice-inputs">
+        <button 
+          v-for="(choice, index) in binaryChoices" 
+          :key="index"
+          @click="selectBinaryChoice(index)"
+          :class="{ 
+            'selected': selectedChoice === index,
+            'touch-optimized': deviceMode === 'touch',
+            'mouse-optimized': deviceMode === 'mouse'
+          }"
+          class="binary-choice-btn"
+        >
+          {{ choice.label }}
+        </button>
+      </div>
+    `;
+  }
+
+  generateStandardInputs(config) {
+    return `
+      <input 
+        v-model="inputValue" 
+        :class="deviceAdaptiveClasses"
+        class="adaptive-input-field"
+        type="${config.input_type || 'text'}"
+        :placeholder="inputPlaceholder"
+      />
     `;
   }
 }

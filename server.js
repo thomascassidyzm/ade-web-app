@@ -207,16 +207,20 @@ wss.on('connection', (ws) => {
         const session = sessions.get(currentSessionId);
         session.messages.push({ role: 'user', content: message.content });
         
-        // Enhanced system prompt with conversation context
-        const contextualPrompt = `You are ADE (App Development Engine). You transform conversations into production-ready apps using APML.
+        // Enhanced system prompt - CHAT AGENT ONLY (no compilation)
+        const contextualPrompt = `You are ADE CHAT AGENT. You discuss app ideas and generate APML specifications. You DO NOT compile code.
 
-## Your Core Capability
-As we chat, you SIMULTANEOUSLY:
+## Your ONLY Responsibilities:
 1. Have natural conversation (keep responses SHORT, ask ONE question)
-2. Build APML structure in real-time based on what user describes
-3. Send APML updates to visualize Mermaid + iPhone simulator
+2. Generate APML specifications based on what user describes  
+3. Send APML to the separate Compiler Agent for Vue.js generation
 
-## APML Pattern Libraries
+## CRITICAL: NEVER COMPILE CODE YOURSELF
+- You generate APML specifications only
+- The dedicated Compiler Agent handles APML→Vue compilation
+- This separation ensures consistent, error-free deployments
+
+## APML Pattern Libraries you can specify:
 Health Apps: welcome → assessment → results → recommendations → booking
 Navigation: main_menu → sections (about, services, community, etc.)
 E-commerce: browse → product → cart → checkout → confirmation
@@ -228,16 +232,16 @@ ${session.messages.slice(-6).map(m => `${m.role}: ${m.content}`).join('\n')}
 ## Your Response Format:
 {
   "chat_response": "SHORT conversational response with ONE question",
-  "apml_update": {
+  "apml_specification": {
     "screens": ["list", "of", "screens", "user", "described"],
     "flows": [{"from": "screen1", "to": "screen2"}],
     "app_context": {"name": "AppName", "type": "health/social/etc"}
   }
 }
 
-Continue building on the app context. Don't restart. Generate both chat AND APML.
+Continue building on the app context. Generate APML specs that the Compiler Agent will transform to Vue.js.
 
-CRITICAL: NEVER output raw APML, JSON, or code in your chat responses. Only natural conversation in chat_response.`;
+CRITICAL: NEVER output raw Vue code, HTML, or CSS. Only APML specifications and natural conversation.`;
 
         // Call Claude API with full conversation context
         const response = await anthropic.messages.create({
@@ -333,22 +337,35 @@ app.get('/api/stats', async (req, res) => {
   }
 });
 
-// API endpoint for APML compilation
+// Import Compiler Agent
+const CompilerAgent = require('./services/compiler-agent');
+const compilerAgent = new CompilerAgent();
+
+// API endpoint for APML compilation - NOW USING COMPILER AGENT
 app.post('/api/compile', async (req, res) => {
   try {
-    const { apml } = req.body;
-    const compiler = new PatternVueCompiler();
-    const vueComponent = compiler.compile(apml);
-    res.json({ 
-      success: true, 
-      vueComponent,
-      message: 'APML compiled to Vue with advanced pattern compiler'
-    });
+    const { apml, sessionId } = req.body;
+    
+    // Use single Compiler Agent (Zenjin-proven architecture)
+    const result = await compilerAgent.compileAPML(apml, sessionId);
+    
+    if (result.success) {
+      res.json({ 
+        success: true, 
+        vueComponent: result.vueCode,
+        apml: result.apml,
+        analysis: result.analysis,
+        stats: result.stats,
+        message: 'APML compiled successfully by Compiler Agent'
+      });
+    } else {
+      res.status(500).json(result);
+    }
   } catch (error) {
     res.status(500).json({ 
       success: false, 
       error: error.message,
-      message: 'Failed to compile APML'
+      message: 'Compiler Agent failed to process APML'
     });
   }
 });
