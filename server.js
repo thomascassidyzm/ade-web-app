@@ -260,9 +260,9 @@ CRITICAL: NEVER output raw Vue code, HTML, or CSS. Only APML specifications and 
         
         try {
           const parsed = JSON.parse(responseContent);
-          if (parsed.chat_response && parsed.apml_update) {
+          if (parsed.chat_response && (parsed.apml_specification || parsed.apml_update)) {
             chatResponse = parsed.chat_response;
-            apmlUpdate = parsed.apml_update;
+            apmlUpdate = parsed.apml_specification || parsed.apml_update;
             
             // Update session with APML data
             if (apmlUpdate.app_context) {

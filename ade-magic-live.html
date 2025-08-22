@@ -52,6 +52,8 @@
         const isThinking = ref(false);
         const currentScreen = ref('start_here');
         const mermaidDiagram = ref('graph TD\n  A[Start Here] --> B[Begin Building]');
+        const currentAPML = ref('');
+        const showAPMLPanel = ref(false);
         const appStructure = ref({
           screens: ['start_here'],
           clusters: {
@@ -83,8 +85,18 @@
             // Process Claude's APML updates if available
             if (data.apmlUpdate) {
               updateFromAPMLStructure(data.apmlUpdate);
+              // Store the APML separately
+              currentAPML.value = JSON.stringify(data.apmlUpdate, null, 2);
+              showAPMLPanel.value = true;
             } else {
+              // Only crystallize for non-separated responses
               crystallizeAPML(data.content);
+              // Extract APML from mixed content for display
+              const apmlMatch = data.content.match(/\{[\s\S]*"apml_specification"[\s\S]*\}/);
+              if (apmlMatch) {
+                currentAPML.value = apmlMatch[0];
+                showAPMLPanel.value = true;
+              }
             }
           };
           
@@ -188,6 +200,13 @@
           updateMermaidDiagram();
         };
         
+        const copyAPML = () => {
+          navigator.clipboard.writeText(currentAPML.value).then(() => {
+            // Could add a toast notification here
+            console.log('APML copied to clipboard');
+          });
+        };
+
         const updateMermaidDiagram = () => {
           const screens = appStructure.value.screens;
           
@@ -420,7 +439,11 @@
           sendMessage,
           startDrag,
           navigateToScreen,
-          getPhoneScreenContent
+          getPhoneScreenContent,
+          // New APML panel functionality
+          currentAPML,
+          showAPMLPanel,
+          copyAPML
         };
       },
       
@@ -514,9 +537,16 @@
                 {{ message.content }}
               </div>
               
-              <!-- Thinking indicator -->
-              <div v-if="isThinking" class="p-2 rounded text-sm max-w-[80%] bg-gray-700 mr-auto">
-                <span class="text-gray-400">ADE is thinking...</span>
+              <!-- Enhanced Thinking indicator -->
+              <div v-if="isThinking" class="p-3 rounded-lg text-sm max-w-[80%] bg-gradient-to-r from-purple-900/30 to-blue-900/30 border border-purple-500/20 mr-auto">
+                <div class="flex items-center space-x-2">
+                  <div class="flex space-x-1">
+                    <div class="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
+                    <div class="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style="animation-delay: 0.2s"></div>
+                    <div class="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" style="animation-delay: 0.4s"></div>
+                  </div>
+                  <span class="text-purple-300 font-medium">ADE is generating your app...</span>
+                </div>
               </div>
             </div>
             
@@ -540,6 +570,38 @@
             </div>
           </div>
           
+          <!-- APML Panel -->
+          <div 
+            v-if="showAPMLPanel" 
+            class="fixed top-4 left-4 w-96 max-h-96 bg-gray-800 border border-purple-500/30 rounded-lg shadow-2xl z-40 overflow-hidden"
+          >
+            <div class="bg-gradient-to-r from-purple-900/50 to-blue-900/50 p-3 border-b border-purple-500/30">
+              <div class="flex items-center justify-between">
+                <h3 class="text-sm font-bold text-purple-300 flex items-center">
+                  <span class="mr-2">⚡</span>
+                  Generated APML
+                </h3>
+                <div class="flex space-x-2">
+                  <button 
+                    @click="copyAPML"
+                    class="px-2 py-1 bg-purple-600 hover:bg-purple-700 rounded text-xs font-medium"
+                  >
+                    Copy
+                  </button>
+                  <button 
+                    @click="showAPMLPanel = false"
+                    class="px-2 py-1 bg-gray-600 hover:bg-gray-700 rounded text-xs"
+                  >
+                    ✕
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div class="p-3 overflow-y-auto max-h-80">
+              <pre class="text-xs text-green-300 whitespace-pre-wrap font-mono">{{ currentAPML }}</pre>
+            </div>
+          </div>
+
           <!-- Chat Toggle (when hidden) -->
           <button 
             v-if="!showChat"
