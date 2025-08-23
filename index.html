@@ -3,613 +3,276 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>ADE - Magic Interface (Live)</title>
-  <script src="https://unpkg.com/vue@3/dist/vue.global.prod.js?v=2025"></script>
-  <link rel="stylesheet" href="public/styles-tailwind-minimal.css?v=2025">
-  <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+  <title>ADE - App Development Engine</title>
+  <script src="https://unpkg.com/vue@3/dist/vue.global.js"></script>
+  <script src="https://cdn.tailwindcss.com"></script>
   <style>
-    .draggable { cursor: move; }
-    .phone-simulator {
-      width: 390px;
-      height: 844px;
-      background: linear-gradient(145deg, #1f2937, #374151);
-      border-radius: 30px;
-      border: 8px solid #4b5563;
-      position: relative;
-      overflow: hidden;
-    }
-    .phone-notch {
-      width: 120px;
-      height: 25px;
-      background: #000;
-      border-radius: 0 0 15px 15px;
-      position: absolute;
-      top: 0;
-      left: 50%;
-      transform: translateX(-50%);
-    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; }
+    .message-enter-active, .message-leave-active { transition: all 0.3s ease; }
+    .message-enter-from { opacity: 0; transform: translateY(10px); }
+    .message-leave-to { opacity: 0; transform: translateY(-10px); }
   </style>
 </head>
-<body class="bg-gray-900 text-white overflow-hidden h-screen">
+<body>
   <div id="app"></div>
   
   <script>
-    mermaid.initialize({ 
-      theme: 'dark',
-      startOnLoad: false,
-      flowchart: { curve: 'basis' }
-    });
-    
     const { createApp, ref, onMounted, nextTick } = Vue;
     
     createApp({
       setup() {
         const messages = ref([]);
         const userInput = ref('');
-        const showChat = ref(true);
-        const chatPosition = ref({ x: 50, y: 50 });
-        const isDragging = ref(false);
-        const isThinking = ref(false);
-        const currentScreen = ref('start_here');
-        const mermaidDiagram = ref('graph TD\n  A[Start Here] --> B[Begin Building]');
-        const currentAPML = ref('');
-        const showAPMLPanel = ref(false);
-        const appStructure = ref({
-          screens: ['start_here'],
-          clusters: {
-            auth: ['signin_signup', 'account_details', 'settings'],
-            admin: ['admin_dashboard', 'user_management', 'system_config'], 
-            anon: ['public_home', 'about', 'contact']
-          }
-        });
+        const isConnected = ref(false);
+        const ws = ref(null);
+        const showChat = ref(false);
         
-        const isConnected = ref(true); // Always connected in Vercel serverless
-        
-        const initializeApp = () => {
-          // Vercel serverless - no WebSocket needed
-          addMessage('assistant', '👋 Hello! I\'m ADE - your App Development Engine. I transform conversations into production-ready apps using APML.\n\nTell me about the app you\'d like to build! For example:\n• "I need a team messaging app"\n• "Build a task management tool"\n• "Create a file sharing platform"');
+        const connectWebSocket = () => {
+          // For Vercel serverless - no WebSocket needed
+          isConnected.value = true;
+          console.log('Connected to ADE (Serverless)');
         };
         
-        const addMessage = (type, content) => {
+        const sendMessage = async () => {
+          if (!userInput.value.trim() || !isConnected.value) return;
+          
+          const messageText = userInput.value;
+          userInput.value = '';
+          
           messages.value.push({
-            type,
-            content,
+            type: 'user',
+            content: messageText,
             timestamp: Date.now()
           });
+          scrollToBottom();
           
-          // Auto-scroll to bottom
-          setTimeout(() => {
+          try {
+            const response = await fetch('/api/chat', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ message: messageText })
+            });
+            
+            const data = await response.json();
+            
+            messages.value.push({
+              type: 'assistant',
+              content: data.content,
+              timestamp: Date.now()
+            });
+            scrollToBottom();
+          } catch (error) {
+            console.error('Chat error:', error);
+            messages.value.push({
+              type: 'assistant',
+              content: 'Sorry, I encountered an error processing your message.',
+              timestamp: Date.now()
+            });
+            scrollToBottom();
+          }
+        };
+        
+        const scrollToBottom = () => {
+          nextTick(() => {
             const chatContainer = document.getElementById('chat-messages');
             if (chatContainer) {
               chatContainer.scrollTop = chatContainer.scrollHeight;
             }
-          }, 100);
+          });
         };
         
-        const sendMessage = async () => {
-          if (!userInput.value.trim()) return;
+        const startChat = () => {
+          showChat.value = true;
+          if (!isConnected.value) {
+            connectWebSocket();
+          }
           
-          const message = userInput.value;
-          addMessage('user', message);
-          crystallizeAPML(message);
-          
-          // Show thinking indicator
-          isThinking.value = true;
-          userInput.value = '';
-          
-          try {
-            // Call Vercel API route instead of WebSocket
-            const response = await fetch('/api/chat', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({ message })
+          // Welcome message
+          setTimeout(() => {
+            messages.value.push({
+              type: 'assistant',
+              content: '👋 Hello! I\'m ADE - your App Development Engine. I transform conversations into production-ready apps using APML.\n\nTell me about the app you\'d like to build! For example:\n• "I need a team messaging app"\n• "Build a task management tool"\n• "Create a file sharing platform"',
+              timestamp: Date.now()
             });
-            
-            if (!response.ok) {
-              throw new Error('Network response was not ok');
-            }
-            
-            const data = await response.json();
-            isThinking.value = false;
-            
-            addMessage('assistant', data.content);
-            
-            // Process APML updates if available
-            if (data.apmlUpdate) {
-              updateFromAPMLStructure(data.apmlUpdate);
-              currentAPML.value = JSON.stringify(data.apmlUpdate, null, 2);
-              showAPMLPanel.value = true;
-            } else {
-              // Extract APML from mixed content for display
-              const apmlMatch = data.content.match(/\{[\s\S]*"apml_specification"[\s\S]*\}/);
-              if (apmlMatch) {
-                currentAPML.value = apmlMatch[0];
-                showAPMLPanel.value = true;
-              }
-              crystallizeAPML(data.content);
-            }
-            
-          } catch (error) {
-            console.error('Chat error:', error);
-            isThinking.value = false;
-            addMessage('assistant', 'Sorry, I encountered an error processing your message. Please try again.');
-          }
-        };
-        
-        const updateFromAPMLStructure = (apmlUpdate) => {
-          console.log('Processing APML update from Claude:', apmlUpdate);
-          
-          if (apmlUpdate.screens) {
-            appStructure.value.screens = [...new Set([...appStructure.value.screens, ...apmlUpdate.screens])];
-          }
-          
-          if (apmlUpdate.app_context) {
-            console.log('App context:', apmlUpdate.app_context);
-          }
-          
-          updateMermaidDiagram();
-        };
-        
-        const crystallizeAPML = (input) => {
-          console.log('Crystallizing APML for:', input);
-          
-          // Auto-detect app patterns and update structure
-          const text = input.toLowerCase();
-          const newScreens = [...appStructure.value.screens];
-          
-          // Enhanced pattern detection
-          if (text.includes('health') || text.includes('diagnostic') || text.includes('medical')) {
-            newScreens.push('welcome', 'assessment', 'results', 'recommendations');
-            console.log('Added health screens');
-          }
-          if (text.includes('mind') && text.includes('body') && text.includes('questionnaire')) {
-            newScreens.push('mind_body_choice', 'mind_questionnaire', 'body_questionnaire');
-            console.log('Added mind/body questionnaire screens');
-          }
-          if (text.includes('questionnaire') && (text.includes('results') || text.includes('protocol'))) {
-            newScreens.push('questionnaire_list', 'questionnaire_detail', 'results_report', 'my_protocols');
-            console.log('Added questionnaire flow screens');
-          }
-          if (text.includes('booking') || text.includes('book') || text.includes('tests')) {
-            newScreens.push('book_tests', 'booking_confirm', 'test_selection');
-            console.log('Added booking screens');
-          }
-          if (text.includes('retake') || text.includes('progress') || text.includes('history')) {
-            newScreens.push('progress_view', 'history_comparison', 'retake_option');
-            console.log('Added progress tracking screens');
-          }
-          if (text.includes('mind questionnaire') || text.includes('mental') || text.includes('psychological')) {
-            newScreens.push('mind_assessment', 'cognitive_questions', 'mood_tracking');
-            console.log('Added mind assessment screens');
-          }
-          if (text.includes('body questionnaire') || text.includes('physical') || text.includes('symptoms')) {
-            newScreens.push('body_assessment', 'symptom_tracker', 'physical_health');
-            console.log('Added body assessment screens');
-          }
-          if (text.includes('social') || text.includes('message') || text.includes('chat')) {
-            newScreens.push('feed', 'messages', 'friends');
-          }
-          if (text.includes('shop') || text.includes('store') || text.includes('buy')) {
-            newScreens.push('browse', 'cart', 'checkout');
-          }
-          
-          appStructure.value.screens = [...new Set(newScreens)];
-          console.log('Updated screens:', appStructure.value.screens);
-          updateMermaidDiagram();
-        };
-        
-        const copyAPML = () => {
-          navigator.clipboard.writeText(currentAPML.value).then(() => {
-            // Could add a toast notification here
-            console.log('APML copied to clipboard');
-          });
-        };
-
-        const updateMermaidDiagram = () => {
-          const screens = appStructure.value.screens;
-          
-          if (screens.length <= 1) {
-            mermaidDiagram.value = 'flowchart TD\n  A[Start Building] --> B[Describe Your App]';
-            renderMermaid();
-            return;
-          }
-          
-          // Generate beautiful complex diagram using GitHub Railway code
-          let mermaidCode = 'flowchart TD\n';
-          
-          // Define main screens with special styling (health app specific)
-          const mainScreens = ['welcome', 'mind_body_choice', 'results', 'recommendations'];
-          
-          // Add screen nodes with emojis and styling
-          screens.forEach((screenId, index) => {
-            if (screenId === 'start_here') return; // Skip default
-            
-            const isMain = mainScreens.includes(screenId);
-            const cleanName = screenId.replace(/_/g, ' ').replace(/^./, c => c.toUpperCase());
-            
-            // Add appropriate emojis based on screen type
-            let emoji = '📱';
-            if (screenId.includes('welcome')) emoji = '🏠';
-            else if (screenId.includes('mind')) emoji = '🧠';
-            else if (screenId.includes('body')) emoji = '💪';
-            else if (screenId.includes('assessment')) emoji = '📋';
-            else if (screenId.includes('result')) emoji = '📊';
-            else if (screenId.includes('recommendation')) emoji = '⚡';
-            else if (screenId.includes('choice')) emoji = '🔄';
-            
-            if (isMain) {
-              mermaidCode += `    ${screenId}["${emoji} ${cleanName}"]:::mainScreen\n`;
-            } else {
-              mermaidCode += `    ${screenId}["${emoji} ${cleanName}"]:::flowScreen\n`;
-            }
-          });
-          
-          // Add intelligent connections based on app flow
-          const screenArray = screens.filter(s => s !== 'start_here');
-          
-          // Connect welcome to choice
-          if (screenArray.includes('welcome') && screenArray.includes('mind_body_choice')) {
-            mermaidCode += `    welcome --> mind_body_choice\n`;
-          }
-          
-          // Connect choice to assessments
-          if (screenArray.includes('mind_body_choice')) {
-            if (screenArray.includes('mind_assessment')) {
-              mermaidCode += `    mind_body_choice --> mind_assessment\n`;
-            }
-            if (screenArray.includes('body_assessment')) {
-              mermaidCode += `    mind_body_choice --> body_assessment\n`;
-            }
-          }
-          
-          // Connect assessments to results
-          screenArray.forEach(screen => {
-            if (screen.includes('assessment') && screenArray.includes('results')) {
-              mermaidCode += `    ${screen} --> results\n`;
-            }
-          });
-          
-          // Connect results to recommendations
-          if (screenArray.includes('results') && screenArray.includes('recommendations')) {
-            mermaidCode += `    results --> recommendations\n`;
-          }
-          
-          // Add some complex cross-connections for visual richness
-          if (screenArray.includes('mind_assessment') && screenArray.includes('body_assessment')) {
-            mermaidCode += `    mind_assessment -.-> body_assessment\n`;
-          }
-          
-          // Add beautiful styling
-          mermaidCode += `
-    classDef mainScreen fill:#10b981,stroke:#059669,stroke-width:3px,color:#fff
-    classDef flowScreen fill:#3b82f6,stroke:#2563eb,stroke-width:2px,color:#fff
-    classDef currentScreen fill:#f59e0b,stroke:#d97706,stroke-width:4px,color:#000
-  `;
-          
-          mermaidDiagram.value = mermaidCode;
-          renderMermaid();
-        };
-        
-        const renderMermaid = async () => {
-          await nextTick();
-          const element = document.getElementById('mermaid-container');
-          if (element) {
-            element.innerHTML = '';
-            try {
-              const { svg } = await mermaid.render('mermaid-graph', mermaidDiagram.value);
-              element.innerHTML = svg;
-              
-              // Add click handlers to mermaid nodes for navigation
-              setTimeout(() => {
-                const nodes = element.querySelectorAll('.node');
-                nodes.forEach(node => {
-                  node.style.cursor = 'pointer';
-                  node.style.transition = 'transform 0.2s ease';
-                  node.style.position = 'relative'; // Fix positioning
-                  
-                  node.addEventListener('mouseenter', () => {
-                    node.style.opacity = '0.8';
-                  });
-                  
-                  node.addEventListener('mouseleave', () => {
-                    node.style.opacity = '1';
-                  });
-                  
-                  node.addEventListener('click', () => {
-                    const nodeText = node.textContent.toLowerCase().replace(/[^a-z]/g, '');
-                    navigateToScreen(nodeText);
-                    
-                    // Visual feedback
-                    node.style.opacity = '0.6';
-                    setTimeout(() => {
-                      node.style.opacity = '1';
-                    }, 150);
-                  });
-                });
-              }, 100);
-            } catch (error) {
-              console.error('Mermaid render error:', error);
-              element.innerHTML = '<p class="text-red-400">Diagram loading...</p>';
-            }
-          }
-        };
-        
-        const navigateToScreen = (screenName) => {
-          currentScreen.value = screenName;
-          console.log('Navigated to:', screenName);
-        };
-        
-        const getPhoneScreenContent = () => {
-          const screen = currentScreen.value;
-          
-          const screens = {
-            start_here: {
-              title: 'Thrive',
-              content: "What's on your mind today?",
-              button: 'Start Assessment',
-              emoji: '🌱'
-            },
-            welcome: {
-              title: 'Welcome to Thrive',
-              content: "What's on your mind today?",
-              button: 'Begin Journey',
-              emoji: '🏠'
-            },
-            mindassessment: {
-              title: 'Mind Assessment',
-              content: 'How are you feeling mentally?',
-              button: 'Continue Questions',
-              emoji: '🧠'
-            },
-            bodyassessment: {
-              title: 'Body Assessment',
-              content: 'How is your physical health?',
-              button: 'Next Question',
-              emoji: '💪'
-            },
-            mindbodychoice: {
-              title: 'Choose Your Path',
-              content: 'Explore your mind or body?',
-              button: 'Mind | Body',
-              emoji: '🔄'
-            },
-            results: {
-              title: 'Your Results',
-              content: 'Based on your responses...',
-              button: 'View Full Report',
-              emoji: '📊'
-            },
-            recommendations: {
-              title: 'Recommendations',
-              content: 'Personalized options for you',
-              button: 'Explore Options',
-              emoji: '⚡'
-            }
-          };
-          
-          return screens[screen] || {
-            title: 'Thrive',
-            content: screen.replace(/([A-Z])/g, ' $1').replace(/^./, c => c.toUpperCase()),
-            button: 'Continue',
-            emoji: '✨'
-          };
-        };
-        
-        // Drag functionality
-        const startDrag = (event) => {
-          isDragging.value = true;
-          const rect = event.target.getBoundingClientRect();
-          const offsetX = event.clientX - rect.left;
-          const offsetY = event.clientY - rect.top;
-          
-          const onMouseMove = (e) => {
-            if (isDragging.value) {
-              chatPosition.value = {
-                x: e.clientX - offsetX,
-                y: e.clientY - offsetY
-              };
-            }
-          };
-          
-          const onMouseUp = () => {
-            isDragging.value = false;
-            document.removeEventListener('mousemove', onMouseMove);
-            document.removeEventListener('mouseup', onMouseUp);
-          };
-          
-          document.addEventListener('mousemove', onMouseMove);
-          document.addEventListener('mouseup', onMouseUp);
+          }, 500);
         };
         
         onMounted(() => {
-          initializeApp();
-          updateMermaidDiagram();
+          // Auto-connect on page load for demo
+          connectWebSocket();
         });
         
         return {
           messages,
           userInput,
-          showChat,
-          chatPosition,
-          currentScreen,
           isConnected,
-          isThinking,
+          showChat,
           sendMessage,
-          startDrag,
-          navigateToScreen,
-          getPhoneScreenContent,
-          // New APML panel functionality
-          currentAPML,
-          showAPMLPanel,
-          copyAPML
+          startChat
         };
       },
       
       template: `
-        <div class="h-screen flex bg-gray-900">
+        <div class="min-h-screen bg-gradient-to-br from-gray-900 via-blue-900 to-purple-900 text-white">
           
-          <!-- Left Pane: Mermaid Map (70%) -->
-          <div class="w-[70%] bg-gray-800 border-r border-gray-700 relative">
-            <div class="p-4 border-b border-gray-700">
-              <h2 class="text-xl font-bold">Live App Structure</h2>
-              <p class="text-sm text-gray-400">Click nodes to navigate • Watch it grow as we chat</p>
-            </div>
-            <div class="p-4 h-full overflow-auto">
-              <div id="mermaid-container" class="w-full h-full"></div>
-            </div>
-          </div>
-          
-          <!-- Right Pane: iPhone Simulator (30%) -->
-          <div class="w-[30%] bg-gray-900 flex items-center justify-center">
-            <div class="phone-simulator">
-              <div class="phone-notch"></div>
-              <div class="p-6 pt-12 h-full flex flex-col">
-                <!-- Status Bar -->
-                <div class="flex justify-between items-center mb-8 text-white text-sm">
-                  <span>9:41</span>
-                  <span>●●●●●</span>
-                </div>
-                
-                <!-- Screen Content -->
-                <div class="flex-1 flex flex-col items-center justify-center text-center text-white px-4">
-                  <div class="text-6xl mb-6">{{ getPhoneScreenContent().emoji }}</div>
-                  <h1 class="text-xl font-bold mb-4">{{ getPhoneScreenContent().title }}</h1>
-                  <p class="text-gray-300 mb-8 leading-relaxed">{{ getPhoneScreenContent().content }}</p>
-                  <button 
-                    @click="navigateToScreen('results')"
-                    class="bg-gradient-to-r from-green-500 to-blue-500 hover:from-green-600 hover:to-blue-600 px-6 py-3 rounded-full font-semibold shadow-lg transform transition hover:scale-105"
-                  >
-                    {{ getPhoneScreenContent().button }}
-                  </button>
-                  
-                  <!-- Current screen indicator -->
-                  <div class="mt-6 text-xs text-gray-500">
-                    Screen: {{ currentScreen.replace(/_/g, ' ') }}
-                  </div>
-                </div>
-                
-                <!-- Bottom Navigation -->
-                <div class="flex justify-around py-4 border-t border-gray-600">
-                  <button @click="navigateToScreen('home')" class="text-blue-400">🏠</button>
-                  <button @click="navigateToScreen('search')" class="text-gray-400">🔍</button>
-                  <button @click="navigateToScreen('profile')" class="text-gray-400">👤</button>
-                </div>
+          <!-- Main Interface -->
+          <div v-if="!showChat" class="container mx-auto px-4 py-8">
+            <header class="text-center mb-12">
+              <h1 class="text-5xl font-bold mb-4 bg-gradient-to-r from-blue-400 to-purple-500 bg-clip-text text-transparent">
+                ADE
+              </h1>
+              <p class="text-2xl text-gray-300 mb-2">
+                App Development Engine
+              </p>
+              <p class="text-lg text-gray-400">
+                Grammar-based app generation • THINK → FEEL → SEE workflow
+              </p>
+            </header>
+            
+            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-16">
+              
+              <!-- Start New App -->
+              <div class="bg-gray-800/50 backdrop-blur p-6 rounded-2xl border border-gray-700/50 text-center">
+                <div class="text-4xl mb-4">🚀</div>
+                <h2 class="text-xl font-bold mb-3 text-green-400">Start New App</h2>
+                <p class="text-gray-300 mb-6 text-sm">
+                  Begin a conversation with ADE. Describe your idea and watch it become reality.
+                </p>
+                <button 
+                  @click="startChat"
+                  class="w-full bg-green-600 hover:bg-green-700 px-4 py-3 rounded-lg font-semibold transition-all"
+                >
+                  💬 Chat with ADE
+                </button>
               </div>
-            </div>
-          </div>
-          
-          <!-- Floating Chat Window -->
-          <div 
-            v-if="showChat"
-            :style="{ 
-              left: chatPosition.x + 'px', 
-              top: chatPosition.y + 'px',
-              position: 'fixed',
-              zIndex: 1000
-            }"
-            class="w-[500px] h-[600px] bg-gray-800 border border-gray-600 rounded-lg shadow-2xl flex flex-col"
-          >
-            <!-- Chat Header -->
-            <div 
-              @mousedown="startDrag"
-              class="p-3 border-b border-gray-600 cursor-move bg-gray-700 rounded-t-lg flex justify-between items-center"
-            >
-              <span class="font-semibold">ADE Chat</span>
-              <div class="flex space-x-2">
-                <button @click="showChat = false" class="text-gray-400 hover:text-white">✕</button>
+              
+              <!-- Complete Lifecycle Demo -->
+              <div class="bg-gray-800/50 backdrop-blur p-6 rounded-2xl border border-gray-700/50 text-center">
+                <div class="text-4xl mb-4">🎯</div>
+                <h2 class="text-xl font-bold mb-3 text-purple-400">Lifecycle Demo</h2>
+                <p class="text-gray-300 mb-6 text-sm">
+                  See the complete THINK → FEEL → SEE process using ProjectChat as example.
+                </p>
+                <a 
+                  href="/meta" 
+                  class="w-full inline-block bg-purple-600 hover:bg-purple-700 px-4 py-3 rounded-lg font-semibold transition-all"
+                >
+                  🎬 View Demo
+                </a>
+              </div>
+              
+              <!-- Live Simulator -->
+              <div class="bg-gray-800/50 backdrop-blur p-6 rounded-2xl border border-gray-700/50 text-center">
+                <div class="text-4xl mb-4">📱</div>
+                <h2 class="text-xl font-bold mb-3 text-blue-400">Live Simulator</h2>
+                <p class="text-gray-300 mb-6 text-sm">
+                  Experience ProjectChat at real iPhone scale with flow diagrams and compilation.
+                </p>
+                <a 
+                  href="/simulator" 
+                  class="w-full inline-block bg-blue-600 hover:bg-blue-700 px-4 py-3 rounded-lg font-semibold transition-all"
+                >
+                  🎮 Try Simulator
+                </a>
+              </div>
+              
+              <!-- APML Tools -->
+              <div class="bg-gray-800/50 backdrop-blur p-6 rounded-2xl border border-gray-700/50 text-center">
+                <div class="text-4xl mb-4">🔧</div>
+                <h2 class="text-xl font-bold mb-3 text-orange-400">APML Tools</h2>
+                <p class="text-gray-300 mb-6 text-sm">
+                  Upload and visualize APML files. See structure, flows, and validation.
+                </p>
+                <a 
+                  href="/visualizer" 
+                  class="w-full inline-block bg-orange-600 hover:bg-orange-700 px-4 py-3 rounded-lg font-semibold transition-all"
+                >
+                  📊 Open Tools
+                </a>
               </div>
             </div>
             
-            <!-- Messages -->
-            <div class="flex-1 overflow-y-auto p-3 space-y-2" id="chat-messages">
-              <div 
-                v-for="message in messages"
-                :key="message.timestamp"
-                :class="[
-                  'p-2 rounded text-sm max-w-[80%]',
-                  message.type === 'user' 
-                    ? 'bg-blue-600 ml-auto' 
-                    : 'bg-gray-700 mr-auto'
-                ]"
-              >
-                {{ message.content }}
-              </div>
-              
-              <!-- Enhanced Thinking indicator -->
-              <div v-if="isThinking" class="p-3 rounded-lg text-sm max-w-[80%] bg-gradient-to-r from-purple-900/30 to-blue-900/30 border border-purple-500/20 mr-auto">
-                <div class="flex items-center space-x-2">
-                  <div class="flex space-x-1">
-                    <div class="w-2 h-2 bg-purple-400 rounded-full animate-pulse"></div>
-                    <div class="w-2 h-2 bg-blue-400 rounded-full animate-pulse" style="animation-delay: 0.2s"></div>
-                    <div class="w-2 h-2 bg-cyan-400 rounded-full animate-pulse" style="animation-delay: 0.4s"></div>
-                  </div>
-                  <span class="text-purple-300 font-medium">ADE is generating your app...</span>
+            <!-- Feature Highlights -->
+            <section class="text-center mb-16">
+              <h2 class="text-3xl font-bold mb-8">Why ADE?</h2>
+              <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                <div class="p-6">
+                  <div class="text-5xl mb-4">⚡</div>
+                  <h3 class="text-xl font-bold mb-3">Grammar + Examples</h3>
+                  <p class="text-gray-400">No searching pattern libraries. Claude knows how to build at any complexity level.</p>
+                </div>
+                <div class="p-6">
+                  <div class="text-5xl mb-4">🧬</div>
+                  <h3 class="text-xl font-bold mb-3">Intent Conservation</h3>
+                  <p class="text-gray-400">APML preserves your intent through all transformations. Regeneration always possible.</p>
+                </div>
+                <div class="p-6">
+                  <div class="text-5xl mb-4">📐</div>
+                  <h3 class="text-xl font-bold mb-3">Real iPhone Scale</h3>
+                  <p class="text-gray-400">390px drives layout. Experience your app at actual device dimensions.</p>
                 </div>
               </div>
+            </section>
+          </div>
+          
+          <!-- Chat Interface -->
+          <div v-if="showChat" class="h-screen flex flex-col bg-gray-900">
+            
+            <!-- Chat Header -->
+            <header class="bg-gray-800 border-b border-gray-700 p-4 flex items-center justify-between">
+              <div class="flex items-center space-x-3">
+                <button @click="showChat = false" class="text-gray-400 hover:text-white">
+                  ← Back
+                </button>
+                <h1 class="text-xl font-bold">ADE Chat</h1>
+                <div :class="['w-2 h-2 rounded-full', isConnected ? 'bg-green-500' : 'bg-red-500']"></div>
+              </div>
+              <div class="text-sm text-gray-400">
+                {{ isConnected ? 'Connected' : 'Connecting...' }}
+              </div>
+            </header>
+            
+            <!-- Messages -->
+            <div id="chat-messages" class="flex-1 overflow-y-auto p-4 space-y-4">
+              <transition-group name="message">
+                <div 
+                  v-for="message in messages"
+                  :key="message.timestamp"
+                  :class="[
+                    'max-w-2xl p-4 rounded-2xl',
+                    message.type === 'user' 
+                      ? 'bg-blue-600 text-white ml-auto' 
+                      : 'bg-gray-800 text-gray-100 mr-auto border border-gray-700'
+                  ]"
+                >
+                  <div class="text-xs opacity-70 mb-2">
+                    {{ message.type === 'user' ? 'You' : 'ADE' }}
+                  </div>
+                  <div class="whitespace-pre-wrap">{{ message.content }}</div>
+                </div>
+              </transition-group>
             </div>
             
             <!-- Input -->
-            <div class="p-3 border-t border-gray-600">
-              <div class="flex space-x-2">
+            <div class="border-t border-gray-700 p-4">
+              <div class="flex space-x-3">
                 <input
                   v-model="userInput"
                   @keyup.enter="sendMessage"
-                  placeholder="Describe your app..."
-                  class="flex-1 px-2 py-1 bg-gray-700 rounded text-sm text-white placeholder-gray-400 focus:outline-none"
+                  :disabled="!isConnected"
+                  placeholder="Describe the app you want to build..."
+                  class="flex-1 px-4 py-3 bg-gray-800 border border-gray-600 rounded-xl text-white placeholder-gray-400 focus:outline-none focus:border-blue-500"
                 />
                 <button
                   @click="sendMessage"
-                  :disabled="!userInput.trim()"
-                  class="px-3 py-1 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 rounded text-sm font-semibold"
+                  :disabled="!isConnected || !userInput.trim()"
+                  class="px-6 py-3 bg-blue-600 hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed text-white rounded-xl font-semibold transition-colors"
                 >
                   Send
                 </button>
               </div>
             </div>
           </div>
-          
-          <!-- APML Panel -->
-          <div 
-            v-if="showAPMLPanel" 
-            class="fixed top-4 left-4 w-96 max-h-96 bg-gray-800 border border-purple-500/30 rounded-lg shadow-2xl z-40 overflow-hidden"
-          >
-            <div class="bg-gradient-to-r from-purple-900/50 to-blue-900/50 p-3 border-b border-purple-500/30">
-              <div class="flex items-center justify-between">
-                <h3 class="text-sm font-bold text-purple-300 flex items-center">
-                  <span class="mr-2">⚡</span>
-                  Generated APML
-                </h3>
-                <div class="flex space-x-2">
-                  <button 
-                    @click="copyAPML"
-                    class="px-2 py-1 bg-purple-600 hover:bg-purple-700 rounded text-xs font-medium"
-                  >
-                    Copy
-                  </button>
-                  <button 
-                    @click="showAPMLPanel = false"
-                    class="px-2 py-1 bg-gray-600 hover:bg-gray-700 rounded text-xs"
-                  >
-                    ✕
-                  </button>
-                </div>
-              </div>
-            </div>
-            <div class="p-3 overflow-y-auto max-h-80">
-              <pre class="text-xs text-green-300 whitespace-pre-wrap font-mono">{{ currentAPML }}</pre>
-            </div>
-          </div>
-
-          <!-- Chat Toggle (when hidden) -->
-          <button 
-            v-if="!showChat"
-            @click="showChat = true"
-            class="fixed bottom-6 right-6 w-16 h-16 bg-blue-600 hover:bg-blue-700 rounded-full flex items-center justify-center text-2xl shadow-lg z-50"
-          >
-            💬
-          </button>
           
         </div>
       `
