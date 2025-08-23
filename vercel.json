@@ -1,0 +1,23 @@
+{
+  "functions": {
+    "api/chat.js": {
+      "runtime": "nodejs18.x"
+    },
+    "api/compile.js": {
+      "runtime": "nodejs18.x"
+    },
+    "api/stats.js": {
+      "runtime": "nodejs18.x"
+    }
+  },
+  "rewrites": [
+    {
+      "source": "/",
+      "destination": "/index.html"
+    },
+    {
+      "source": "/api/(.*)",
+      "destination": "/api/$1"
+    }
+  ]
+}
