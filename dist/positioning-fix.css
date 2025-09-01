@@ -1,0 +1,29 @@
+/* Fix positioning issues */
+/* Hide any misplaced VFS elements at top */
+.vfs-container:first-of-type,
+#vfs-tree:first-of-type {
+  display: none !important;
+}
+
+/* Ensure VFS button and container stay at bottom */
+button:contains("VFS") {
+  bottom: 20px !important;
+  top: auto !important;
+}
+
+/* Work Queue styling when toggled */
+.work-queue-hidden {
+  display: none !important;
+}
+
+/* Connection status fix */
+.connection-status {
+  z-index: 10 !important; /* Lower than modals */
+}
+
+/* Clear any top-positioned elements */
+div[style*="top: 100px"],
+div[style*="top: 120px"] {
+  top: auto !important;
+  bottom: 80px !important;
+}

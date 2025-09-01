@@ -2,8 +2,20 @@
   "name": "ade-web-app",
   "version": "7.0.0",
   "description": "ADE - App Development Engine with Claude Sonnet 4",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview",
+    "start": "node server.js"
+  },
   "dependencies": {
-    "@anthropic-ai/sdk": "^0.27.0"
+    "@anthropic-ai/sdk": "^0.27.0",
+    "vue": "^3.3.8"
+  },
+  "devDependencies": {
+    "@vitejs/plugin-vue": "^4.5.0",
+    "vite": "^5.0.0"
   },
   "engines": {
     "node": ">=18.0.0"
